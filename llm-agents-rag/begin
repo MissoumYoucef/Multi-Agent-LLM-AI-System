@@ -1,0 +1,12 @@
+# Start both services
+docker-compose up --build
+
+# Test RAG service directly
+curl -X POST http://localhost:8001/retrieve \
+  -H "Content-Type: application/json" \
+  -d '{"query": "What is the main topic?"}'
+
+# Test Inference service (calls RAG internally)
+curl -X POST http://localhost:8000/chat \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Summarize the document"}'

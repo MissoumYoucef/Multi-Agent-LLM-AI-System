@@ -1,0 +1,19 @@
+# RAG Service Dependencies (minimal)
+fastapi>=0.109.0
+uvicorn[standard]>=0.25.0
+pydantic>=2.0.0
+
+# LangChain RAG components
+langchain>=0.1.0
+langchain-google-genai>=0.0.9
+langchain-community>=0.0.10
+langchain-chroma>=0.1.0
+
+# Document processing
+pypdf>=4.0.0
+chromadb>=0.4.22
+rank_bm25>=0.2.2
+
+# Configuration
+python-dotenv>=1.0.0
+google-generativeai>=0.3.2

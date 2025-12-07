@@ -1,0 +1,88 @@
+version: '3.8'
+
+# =============================================================================
+# LLM RAG Agent - Microservices Architecture
+# =============================================================================
+# Services:
+#   - rag-service:       Handles document loading, vector store, and retrieval (Port 8001)
+#   - inference-service: Handles LLM agents and orchestration (Port 8000)
+#
+# Data Flow:
+#   User -> inference-service -> rag-service -> Vector DB
+#                             <- Retrieved Context
+#        <- LLM Response
+# =============================================================================
+
+services:
+  # ---------------------------------------------------------------------------
+  # RAG Service - Document Retrieval
+  # ---------------------------------------------------------------------------
+  rag-service:
+    build:
+      context: .
+      dockerfile: services/rag_service/Dockerfile
+    image: llm-rag-service:latest
+    container_name: rag-service
+    ports:
+      - "8001:8001"
+    volumes:
+      # Persist the Chroma vector database
+      - chroma_data:/app/chroma_db
+      # Mount PDF data (allows adding new PDFs without rebuild)
+      - ./data:/app/data:ro # Read-only
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health').raise_for_status()" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+  # ---------------------------------------------------------------------------
+  # Inference Service - LLM Agents
+  # ---------------------------------------------------------------------------
+  inference-service:
+    build:
+      context: .
+      dockerfile: services/inference_service/Dockerfile
+    image: llm-inference-service:latest
+    container_name: inference-service
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - PYTHONUNBUFFERED=1
+      - RAG_SERVICE_URL=http://rag-service:8001 # Internal Docker network URL
+    depends_on:
+      rag-service:
+        condition: service_healthy # Wait for RAG service to be ready
+    healthcheck:
+      test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8000/health').raise_for_status()" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+# =============================================================================
+# Named Volumes (Persistent Storage)
+# =============================================================================
+volumes:
+  chroma_data:
+    driver: local
+
+# =============================================================================
+# Networks
+# =============================================================================
+networks:
+  llm-network:
+    driver: bridge

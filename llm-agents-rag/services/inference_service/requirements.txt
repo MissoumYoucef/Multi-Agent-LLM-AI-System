@@ -1,0 +1,14 @@
+# Inference Service Dependencies (minimal)
+fastapi>=0.109.0
+uvicorn[standard]>=0.25.0
+pydantic>=2.0.0
+httpx>=0.26.0  # For calling RAG service
+
+# LangChain Agent components
+langchain>=0.1.0
+langchain-google-genai>=0.0.9
+langgraph>=0.0.10
+
+# Configuration
+python-dotenv>=1.0.0
+google-generativeai>=0.3.2

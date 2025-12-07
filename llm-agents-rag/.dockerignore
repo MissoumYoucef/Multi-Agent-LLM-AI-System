@@ -1,0 +1,15 @@
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.git/
+.github/
+.vscode/
+.idea/
+.DS_Store
+data/pdfs/*
+!data/pdfs/text.pdf
