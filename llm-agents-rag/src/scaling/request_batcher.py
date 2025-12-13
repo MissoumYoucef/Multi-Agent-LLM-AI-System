@@ -1,6 +1,5 @@
 """
 Request Batcher module.
-
 Provides request batching for efficient API usage and throughput optimization.
 """
 import logging
@@ -37,7 +36,6 @@ class BatchResult:
 class RequestBatcher:
     """
     Batches incoming requests for efficient processing.
-    
     Collects requests within a time window or until batch size
     is reached, then processes them together.
     """

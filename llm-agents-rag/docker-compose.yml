@@ -17,7 +17,40 @@ services:
   # ---------------------------------------------------------------------------
   # RAG Service - Document Retrieval
   # ---------------------------------------------------------------------------
+
+  # detector-service:
+  #   build:
+  #     context: .
+  #     dockerfile: services/detector_service/Dockerfile
+  #   image: llm-detector-service:latest
+  #   container_name: detector-service
+  #   ports:
+  #     - "8003:8003"
+  #   volumes:
+  #     # Persist the Chroma vector database
+  #     - chroma_data:/app/chroma_db
+  #     # Mount PDF data (allows adding new PDFs without rebuild)
+  #     - ./data:/app/data:ro # Read-only
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     - PYTHONUNBUFFERED=1
+  #   depends_on:
+  #     - rag-service
+  #     - inference-service
+  #   healthcheck:
+  #     test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health').raise_for_status()" ]
+  #     interval: 30s
+  #     timeout: 10s
+  #     retries: 3
+  #     start_period: 10s
+  #   restart: unless-stopped
+  #   networks:
+  #     - llm-network
+
+
   rag-service:
+
     build:
       context: .
       dockerfile: services/rag_service/Dockerfile

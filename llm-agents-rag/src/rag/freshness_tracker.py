@@ -26,7 +26,6 @@ class DocumentMetadata:
     is_stale: bool = False
     metadata: Dict[str, Any] = field(default_factory=dict)
 
-
 class FreshnessTracker:
     """
     Tracks document freshness and identifies stale content.
