@@ -17,3 +17,6 @@ rank_bm25>=0.2.2
 # Configuration
 python-dotenv>=1.0.0
 google-generativeai>=0.3.2
+
+# HTTP client (for healthcheck)
+httpx>=0.25.0

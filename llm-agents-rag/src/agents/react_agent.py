@@ -7,11 +7,17 @@ The agent explicitly thinks through problems before taking actions.
 import logging
 from typing import List, Optional, Any, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+# from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain.agents import AgentExecutor, create_react_agent
+# from langchain.agents import AgentExecutor, create_react_agent
+from langchain_classic.agents import create_react_agent
+# from langchain_core.agents import AgentExecutor
+from langchain_classic.agents import AgentExecutor
+
 from langchain_core.tools import BaseTool
-from langchain import hub
+# from langchain import hub
+from langchainhub import hub 
 
 from .tools import get_tools, calculate, summarize, format_as_list, extract_keywords
 from ..utils.config import GOOGLE_API_KEY, LLM_MODEL

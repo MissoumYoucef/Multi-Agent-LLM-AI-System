@@ -8,7 +8,8 @@ import logging
 from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+# from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 from ..utils.config import GOOGLE_API_KEY, LLM_MODEL

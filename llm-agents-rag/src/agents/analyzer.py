@@ -5,7 +5,8 @@ Provides an analytical agent that reviews solutions for accuracy and completenes
 """
 import logging
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
+# from langchain.prompts import PromptTemplate
+from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 from ..utils.config import GOOGLE_API_KEY, LLM_MODEL
 

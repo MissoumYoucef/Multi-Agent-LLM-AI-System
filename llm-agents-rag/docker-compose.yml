@@ -18,37 +18,6 @@ services:
   # RAG Service - Document Retrieval
   # ---------------------------------------------------------------------------
 
-  # detector-service:
-  #   build:
-  #     context: .
-  #     dockerfile: services/detector_service/Dockerfile
-  #   image: llm-detector-service:latest
-  #   container_name: detector-service
-  #   ports:
-  #     - "8003:8003"
-  #   volumes:
-  #     # Persist the Chroma vector database
-  #     - chroma_data:/app/chroma_db
-  #     # Mount PDF data (allows adding new PDFs without rebuild)
-  #     - ./data:/app/data:ro # Read-only
-  #   env_file:
-  #     - .env
-  #   environment:
-  #     - PYTHONUNBUFFERED=1
-  #   depends_on:
-  #     - rag-service
-  #     - inference-service
-  #   healthcheck:
-  #     test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health').raise_for_status()" ]
-  #     interval: 30s
-  #     timeout: 10s
-  #     retries: 3
-  #     start_period: 10s
-  #   restart: unless-stopped
-  #   networks:
-  #     - llm-network
-
-
   rag-service:
 
     build:
@@ -112,10 +81,101 @@ services:
 volumes:
   chroma_data:
     driver: local
+  # Uncomment when enabling optional services:
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
 
-# =============================================================================
-# Networks
-# =============================================================================
+  # =============================================================================
+  # Networks
+  # =============================================================================
 networks:
   llm-network:
     driver: bridge
+
+# =============================================================================
+# OPTIONAL SERVICES - Uncomment to enable production observability
+# =============================================================================
+
+# ---------------------------------------------------------------------------
+# Redis - Caching Service
+# ---------------------------------------------------------------------------
+# Enables response caching via src/utils/cache.py
+# Set REDIS_URL=redis://redis:6379 in .env to use
+# ---------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+# ---------------------------------------------------------------------------
+# Jaeger - Distributed Tracing
+# ---------------------------------------------------------------------------
+# Enables trace visualization via src/scaling/tracing.py
+# Set TRACING_ENABLED=true in .env to use
+# Access UI at http://localhost:16686
+# ---------------------------------------------------------------------------
+  jaeger:
+    image: jaegertracing/all-in-one:1.52
+    container_name: jaeger
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTLP gRPC
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+# ---------------------------------------------------------------------------
+# Prometheus - Metrics Collection
+# ---------------------------------------------------------------------------
+# Requires prometheus.yml configuration file
+# Access at http://localhost:9090
+# ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      - llm-network
+
+# ---------------------------------------------------------------------------
+# Grafana - Metrics Visualization
+# ---------------------------------------------------------------------------
+# Depends on Prometheus
+# Access dashboard at http://localhost:3000 (admin/admin)
+# ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - llm-network

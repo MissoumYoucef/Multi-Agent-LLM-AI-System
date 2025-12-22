@@ -7,7 +7,7 @@ import logging
 from typing import List, Optional
 from langchain_core.documents import Document
 from langchain_community.retrievers import BM25Retriever
-from langchain.retrievers import EnsembleRetriever
+from langchain_classic.retrievers import EnsembleRetriever
 from langchain_core.vectorstores import VectorStore
 from ..utils.config import RETRIEVER_K, BM25_WEIGHT, VECTOR_WEIGHT
 

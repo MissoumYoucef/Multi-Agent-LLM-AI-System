@@ -20,7 +20,8 @@ class TestHybridRetrieverInit:
         from src.rag.retriever import HybridRetriever
         from src.utils.config import RETRIEVER_K, BM25_WEIGHT, VECTOR_WEIGHT
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             
@@ -34,7 +35,8 @@ class TestHybridRetrieverInit:
         """Test initialization with custom parameters."""
         from src.rag.retriever import HybridRetriever
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             
@@ -54,7 +56,8 @@ class TestHybridRetrieverInit:
         """Test that ensemble retriever is created."""
         from src.rag.retriever import HybridRetriever
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             
@@ -70,7 +73,8 @@ class TestRetrieve:
         """Test that retrieve returns documents."""
         from src.rag.retriever import HybridRetriever
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             
@@ -90,7 +94,8 @@ class TestRetrieve:
         """Test that empty query returns empty list."""
         from src.rag.retriever import HybridRetriever
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             
@@ -106,7 +111,8 @@ class TestRetrieve:
         """Test that None query returns empty list."""
         from src.rag.retriever import HybridRetriever
         
-        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25:
+        with patch('src.rag.retriever.BM25Retriever.from_documents') as mock_bm25, \
+             patch('src.rag.retriever.EnsembleRetriever'):
             mock_bm25_instance = MagicMock()
             mock_bm25.return_value = mock_bm25_instance
             

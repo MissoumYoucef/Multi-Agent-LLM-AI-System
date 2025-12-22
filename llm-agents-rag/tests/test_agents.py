@@ -21,8 +21,8 @@ class TestChatbotAgent:
         with patch('src.agents.chatbot.ChatGoogleGenerativeAI') as mock_llm:
             agent = ChatbotAgent()
             
-            assert agent.prompt is not None
-            assert agent.chain is not None
+            assert agent.simple_prompt is not None
+            assert agent.simple_chain is not None
             mock_llm.assert_called_once()
     
     def test_custom_model(self):
@@ -50,13 +50,13 @@ class TestChatbotAgent:
         
         with patch('src.agents.chatbot.ChatGoogleGenerativeAI'):
             agent = ChatbotAgent()
-            agent.chain = MagicMock()
-            agent.chain.invoke.return_value = "Test response"
+            agent.simple_chain = MagicMock()
+            agent.simple_chain.invoke.return_value = "Test response"
             
             result = agent.invoke("What is AI?")
             
             assert result == "Test response"
-            agent.chain.invoke.assert_called_once()
+            agent.simple_chain.invoke.assert_called_once()
 
 
 class TestSolverAgent:
