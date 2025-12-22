@@ -105,7 +105,7 @@ A production-ready **Multi-Agent LLM System** to overcome hallucinations built w
                                       │
                                       ▼
 ┌────────────────────────────────────────────────────────────────────────────┐
-│                         OBSERVABILITY STACK (Optional)                     │
+│                         OBSERVABILITY STACK                                │
 │  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐    ┌─────────────┐  │
 │  │    Redis    │    │   Jaeger    │    │ Prometheus  │    │   Grafana   │  │
 │  │   Caching   │    │   Tracing   │    │   Metrics   │    │  Dashboard  │  │
