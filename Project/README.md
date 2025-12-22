@@ -1,6 +1,6 @@
 # 🤖 Multi-Agent RAG System with LLM Orchestration
 
-A production-ready **Multi-Agent LLM System** built with LangChain and LangGraph, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, and comprehensive **guardrails**. Designed for scalable, reliable AI-powered document Q&A.
+A production-ready **Multi-Agent LLM System** to overcome hallucinations built with LangChain and LangGraph, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, and comprehensive **guardrails**. Designed for scalable, reliable AI-powered document Q&A.
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-0.1+-green.svg)
