@@ -160,7 +160,7 @@ A production-ready **Multi-Agent LLM System** to overcome hallucinations built w
 
 ```mermaid
 graph TD
-    A[Start] --> B[Input Guardrail]
+    A[Start] --> B[Chatbot & Input Guardrail]
     B -->|Blocked| Z[Return Error]
     B -->|Passed| C{ReAct Enabled?}
     C -->|Yes| D[ReAct Reasoning]
