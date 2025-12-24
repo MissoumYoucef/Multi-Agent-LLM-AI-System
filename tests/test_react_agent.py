@@ -15,18 +15,20 @@ class TestSimpleReActAgent:
         """Test agent initializes correctly."""
         from src.agents.react_agent import SimpleReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI') as mock_google, \
+             patch('src.agents.react_agent.ChatOllama') as mock_ollama:
             agent = SimpleReActAgent()
             
             assert agent.prompt is not None
             assert agent.chain is not None
-            mock_llm.assert_called()
+            assert mock_google.called or mock_ollama.called
     
     def test_custom_model(self):
         """Test agent accepts custom model."""
         from src.agents.react_agent import SimpleReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             agent = SimpleReActAgent(model="gemini-1.5-pro")
             
             assert agent.model_name == "gemini-1.5-pro"
@@ -35,7 +37,8 @@ class TestSimpleReActAgent:
         """Test invoke handles empty question."""
         from src.agents.react_agent import SimpleReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             agent = SimpleReActAgent()
             
             result = agent.invoke("")
@@ -45,7 +48,8 @@ class TestSimpleReActAgent:
         """Test invoke calls the chain correctly."""
         from src.agents.react_agent import SimpleReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             agent = SimpleReActAgent()
             agent.chain = MagicMock()
             agent.chain.invoke.return_value = "Step 1: Think. Step 2: Answer."
@@ -63,7 +67,8 @@ class TestReActAgent:
         """Test full ReActAgent initializes."""
         from src.agents.react_agent import ReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
                 with patch('src.agents.react_agent.AgentExecutor') as mock_executor:
                     mock_create.return_value = MagicMock()
@@ -76,7 +81,8 @@ class TestReActAgent:
         """Test reasoning extraction from steps."""
         from src.agents.react_agent import ReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
                 with patch('src.agents.react_agent.AgentExecutor'):
                     mock_create.return_value = MagicMock()
@@ -99,7 +105,8 @@ class TestReActAgent:
         """Test reasoning trace with no steps."""
         from src.agents.react_agent import ReActAgent
         
-        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
+        with patch('src.agents.react_agent.ChatGoogleGenerativeAI'), \
+             patch('src.agents.react_agent.ChatOllama'):
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
                 with patch('src.agents.react_agent.AgentExecutor'):
                     mock_create.return_value = MagicMock()

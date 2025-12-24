@@ -18,18 +18,20 @@ class TestChatbotAgent:
         """Test agent initializes correctly."""
         from src.agents.chatbot import ChatbotAgent
         
-        with patch('src.agents.chatbot.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.chatbot.ChatGoogleGenerativeAI') as mock_google, \
+             patch('src.agents.chatbot.ChatOllama') as mock_ollama:
             agent = ChatbotAgent()
             
             assert agent.simple_prompt is not None
             assert agent.simple_chain is not None
-            mock_llm.assert_called_once()
+            assert mock_google.called or mock_ollama.called
     
     def test_custom_model(self):
         """Test agent accepts custom model."""
         from src.agents.chatbot import ChatbotAgent
         
-        with patch('src.agents.chatbot.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.chatbot.ChatGoogleGenerativeAI'), \
+             patch('src.agents.chatbot.ChatOllama'):
             agent = ChatbotAgent(model="gemini-1.5-pro")
             
             assert agent.model_name == "gemini-1.5-pro"
@@ -38,7 +40,8 @@ class TestChatbotAgent:
         """Test invoke handles empty question."""
         from src.agents.chatbot import ChatbotAgent
         
-        with patch('src.agents.chatbot.ChatGoogleGenerativeAI'):
+        with patch('src.agents.chatbot.ChatGoogleGenerativeAI'), \
+             patch('src.agents.chatbot.ChatOllama'):
             agent = ChatbotAgent()
             
             result = agent.invoke("")
@@ -48,7 +51,8 @@ class TestChatbotAgent:
         """Test invoke calls the chain correctly."""
         from src.agents.chatbot import ChatbotAgent
         
-        with patch('src.agents.chatbot.ChatGoogleGenerativeAI'):
+        with patch('src.agents.chatbot.ChatGoogleGenerativeAI'), \
+             patch('src.agents.chatbot.ChatOllama'):
             agent = ChatbotAgent()
             agent.simple_chain = MagicMock()
             agent.simple_chain.invoke.return_value = "Test response"
@@ -66,18 +70,20 @@ class TestSolverAgent:
         """Test agent initializes correctly."""
         from src.agents.solver import SolverAgent
         
-        with patch('src.agents.solver.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.solver.ChatGoogleGenerativeAI') as mock_google, \
+             patch('src.agents.solver.ChatOllama') as mock_ollama:
             agent = SolverAgent()
             
             assert agent.prompt is not None
             assert agent.chain is not None
-            mock_llm.assert_called_once()
+            assert mock_google.called or mock_ollama.called
     
     def test_custom_model(self):
         """Test agent accepts custom model."""
         from src.agents.solver import SolverAgent
         
-        with patch('src.agents.solver.ChatGoogleGenerativeAI'):
+        with patch('src.agents.solver.ChatGoogleGenerativeAI'), \
+             patch('src.agents.solver.ChatOllama'):
             agent = SolverAgent(model="gemini-1.5-flash")
             
             assert agent.model_name == "gemini-1.5-flash"
@@ -86,7 +92,8 @@ class TestSolverAgent:
         """Test invoke handles empty problem."""
         from src.agents.solver import SolverAgent
         
-        with patch('src.agents.solver.ChatGoogleGenerativeAI'):
+        with patch('src.agents.solver.ChatGoogleGenerativeAI'), \
+             patch('src.agents.solver.ChatOllama'):
             agent = SolverAgent()
             
             result = agent.invoke("", "some context")
@@ -96,7 +103,8 @@ class TestSolverAgent:
         """Test invoke calls the chain correctly."""
         from src.agents.solver import SolverAgent
         
-        with patch('src.agents.solver.ChatGoogleGenerativeAI'):
+        with patch('src.agents.solver.ChatGoogleGenerativeAI'), \
+             patch('src.agents.solver.ChatOllama'):
             agent = SolverAgent()
             agent.chain = MagicMock()
             agent.chain.invoke.return_value = "Solution here"
@@ -114,18 +122,20 @@ class TestAnalyzerAgent:
         """Test agent initializes correctly."""
         from src.agents.analyzer import AnalyzerAgent
         
-        with patch('src.agents.analyzer.ChatGoogleGenerativeAI') as mock_llm:
+        with patch('src.agents.analyzer.ChatGoogleGenerativeAI') as mock_google, \
+             patch('src.agents.analyzer.ChatOllama') as mock_ollama:
             agent = AnalyzerAgent()
             
             assert agent.prompt is not None
             assert agent.chain is not None
-            mock_llm.assert_called_once()
+            assert mock_google.called or mock_ollama.called
     
     def test_custom_model(self):
         """Test agent accepts custom model."""
         from src.agents.analyzer import AnalyzerAgent
         
-        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'):
+        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'), \
+             patch('src.agents.analyzer.ChatOllama'):
             agent = AnalyzerAgent(model="gemini-pro-vision")
             
             assert agent.model_name == "gemini-pro-vision"
@@ -134,7 +144,8 @@ class TestAnalyzerAgent:
         """Test invoke handles empty solution."""
         from src.agents.analyzer import AnalyzerAgent
         
-        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'):
+        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'), \
+             patch('src.agents.analyzer.ChatOllama'):
             agent = AnalyzerAgent()
             
             result = agent.invoke("problem", "", "context")
@@ -144,7 +155,8 @@ class TestAnalyzerAgent:
         """Test invoke calls the chain correctly."""
         from src.agents.analyzer import AnalyzerAgent
         
-        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'):
+        with patch('src.agents.analyzer.ChatGoogleGenerativeAI'), \
+             patch('src.agents.analyzer.ChatOllama'):
             agent = AnalyzerAgent()
             agent.chain = MagicMock()
             agent.chain.invoke.return_value = "Analysis complete"
