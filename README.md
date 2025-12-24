@@ -92,10 +92,42 @@ graph TD
 
 ---
 
-## 📦 System Modules
+## 📦 System Modules (`src`)
 
-### Agents (`src/agents`)
-The core reasoning units of the system.
+The system is organized into modular packages to ensure separation of concerns.
+
+```mermaid
+graph TD
+    subgraph "Core Logic"
+        Agents[src/agents]
+        RAG[src/rag]
+        Memory[src/memory]
+    end
+    
+    subgraph "Support Infrastructure"
+        Utils[src/utils]
+        Eval[src/evaluation]
+        Monitor[src/monitoring]
+        Scale[src/scaling]
+    end
+    
+    Agents -->|Retrieves Context| RAG
+    Agents -->|Reads/Writes| Memory
+    
+    Agents -->|Uses| Utils
+    RAG -->|Uses| Utils
+    
+    Eval -->|Tests| Agents
+    Monitor -->|Observes| Agents
+    Monitor -->|Observes| RAG
+    
+    Agents -.->|Traced By| Scale
+```
+
+### Module Breakdown
+
+#### 🧠 [Agents](src/agents/README.md)
+The brain of the application.
 | Component | Description |
 |-----------|-------------|
 | **Orchestrator** | Central `LangGraph` state machine that manages the workflow and routing. |
@@ -105,7 +137,7 @@ The core reasoning units of the system.
 | **Reflective Agent** | Performs self-reflection and detailed critique to improve quality. |
 | **Guardrails** | Security layers ensuring input safety and output privacy. |
 
-### RAG Pipeline (`src/rag`)
+#### 📚 [RAG Pipeline](src/rag/README.md)
 Handles document ingestion and context retrieval.
 | Component | Description |
 |-----------|-------------|
@@ -114,17 +146,36 @@ Handles document ingestion and context retrieval.
 | **Document Loader** | Parses PDFs and handles text chunking with recursive splitting. |
 | **Freshness Tracker** | Monitors source files to only re-index modified documents. |
 
-### Memory Management (`src/memory`)
+#### 💾 [Memory Management](src/memory/README.md)
 | Component | Description |
 |-----------|-------------|
 | **Memory Manager** | Unified interface for short-term and persistent memory. |
 | **Conversation Buffer** | Manages context windows, automatically summarizing old terms. |
 
-### Monitoring & Observability (`src/monitoring`)
+#### 🔭 [Monitoring](src/monitoring/README.md)
 | Component | Description |
 |-----------|-------------|
 | **Drift Detector** | Analyzes query distribution to detect data/concept drift. |
 | **Alert Manager** | Routes critical system health alerts to configured channels. |
+
+#### ⚖️ [Scaling](src/scaling/README.md)
+| Component | Description |
+|-----------|-------------|
+| **Request Batcher** | Aggregates multiple API calls to optimize throughput. |
+| **Distributed Tracing** | OpenTelemetry integration for full-stack request visibility. |
+
+#### 📊 [Evaluation](src/evaluation/README.md)
+| Component | Description |
+|-----------|-------------|
+| **Metrics** | Implements ROUGE, BLEU, and custom correctness scores. |
+| **Continuous Eval** | Automated testing of agent performance against ground truth. |
+
+#### 🛠 [Utils](src/utils/README.md)
+| Component | Description |
+|-----------|-------------|
+| **Config** | Centralized environment and configuration management. |
+| **Caching** | Redis-backed response caching for latency reduction. |
+
 
 ---
 
