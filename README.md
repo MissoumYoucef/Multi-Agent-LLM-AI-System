@@ -274,6 +274,36 @@ To deploy the full microservices stack (Inference, RAG, Observability):
 docker-compose up -d
 ```
 
+### Microservices Architecture
+
+The system is deployed as a set of interacting containers orchestrated by Docker Compose.
+
+```mermaid
+graph TD
+    Client[Client / API Consumer] -->|HTTP/REST| Inference[Inference Service]
+    
+    subgraph "Application Cluster"
+        Inference -->|Retrieve Context| RAG[RAG Service]
+        Inference -->|Cache Hit/Miss| Redis[(Redis Cache)]
+        
+        RAG -->|Vector Search| Chroma[(Chroma Vector DB)]
+    end
+    
+    subgraph "Observability Stack"
+        Inference -.->|Traces| Jaeger[Jaeger Tracing]
+        RAG -.->|Traces| Jaeger
+        
+        Prometheus[Prometheus Metrics] -->|Scrapes| Inference
+        Prometheus -->|Scrapes| RAG
+        
+        Grafana[Grafana Dashboards] -->|Reads| Prometheus
+        Grafana -->|Reads| Jaeger
+    end
+    
+    style Inference fill:#f9f,stroke:#333,stroke-width:2px
+    style RAG fill:#bbf,stroke:#333,stroke-width:2px
+```
+
 ### Service Endpoints
 | Service | URL | Description |
 |---------|-----|-------------|
