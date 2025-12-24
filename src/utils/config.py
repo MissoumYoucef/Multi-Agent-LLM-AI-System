@@ -45,7 +45,13 @@ def get_optional_env(name: str, default: str) -> str:
 
 
 # API Configuration
-GOOGLE_API_KEY: str = get_required_env("GOOGLE_API_KEY")
+GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
+
+# Local Model Configuration
+USE_LOCAL: bool = GOOGLE_API_KEY is None or os.getenv("USE_LOCAL", "false").lower() == "true"
+LOCAL_LLM_MODEL: str = get_optional_env("LOCAL_LLM_MODEL", "llama3.2:1b")
+LOCAL_EMBEDDING_MODEL: str = get_optional_env("LOCAL_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
+OLLAMA_BASE_URL: str = get_optional_env("OLLAMA_BASE_URL", "http://localhost:11434")
 
 # Model Configuration
 LLM_MODEL: str = get_optional_env("LLM_MODEL", "gemini-pro")

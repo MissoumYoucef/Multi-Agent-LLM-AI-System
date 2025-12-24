@@ -11,7 +11,7 @@ def main():
     
     # 1. Load Data
     print("Loading data...")
-    loader = PDFLoader(PDF_DATA_PATH)
+    loader = PDFLoader(PDF_DATA_PATH, load_all=True)
     documents = loader.load_documents()
     if not documents:
         print("No documents found. Please ensure PDFs are in data/pdfs/")

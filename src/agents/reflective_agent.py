@@ -8,11 +8,10 @@ import logging
 from typing import Dict, Optional, Tuple
 from dataclasses import dataclass
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-
-from ..utils.config import GOOGLE_API_KEY, LLM_MODEL
+from ..utils.config import GOOGLE_API_KEY, LLM_MODEL, USE_LOCAL, LOCAL_LLM_MODEL, OLLAMA_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -52,10 +51,17 @@ class ReflectiveAgent:
         self.quality_threshold = quality_threshold
         self.max_refinements = max_refinements
         
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=GOOGLE_API_KEY
-        )
+        if USE_LOCAL:
+            logger.info(f"Using local LLM for ReflectiveAgent: {LOCAL_LLM_MODEL}")
+            self.llm = ChatOllama(
+                model=LOCAL_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL
+            )
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                google_api_key=GOOGLE_API_KEY
+            )
         
         # Critique prompt
         self.critique_prompt = PromptTemplate(
@@ -297,10 +303,17 @@ class CriticAgent:
     def __init__(self, model: str = None):
         """Initialize the critic agent."""
         self.model_name = model or LLM_MODEL
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=GOOGLE_API_KEY
-        )
+        if USE_LOCAL:
+            logger.info(f"Using local LLM for CriticAgent: {LOCAL_LLM_MODEL}")
+            self.llm = ChatOllama(
+                model=LOCAL_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL
+            )
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                google_api_key=GOOGLE_API_KEY
+            )
         
         self.prompt = PromptTemplate(
             template="""As a critic, evaluate this response objectively.

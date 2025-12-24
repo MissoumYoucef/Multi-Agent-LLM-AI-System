@@ -7,12 +7,10 @@ import logging
 from difflib import SequenceMatcher
 from typing import List, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
-
-# from langchain.prompts import PromptTemplate ---> error
-
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from ..utils.config import GOOGLE_API_KEY, LLM_MODEL
+from ..utils.config import GOOGLE_API_KEY, LLM_MODEL, USE_LOCAL, LOCAL_LLM_MODEL, OLLAMA_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +34,17 @@ class EvaluationMetrics:
             model: Optional model name override. Defaults to LLM_MODEL from config.
         """
         self.model_name = model or LLM_MODEL
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=GOOGLE_API_KEY
-        )
+        if USE_LOCAL:
+            logger.info(f"Using local LLM for evaluation metrics: {LOCAL_LLM_MODEL}")
+            self.llm = ChatOllama(
+                model=LOCAL_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL
+            )
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                google_api_key=GOOGLE_API_KEY
+            )
         logger.info(f"EvaluationMetrics initialized with model: {self.model_name}")
 
     def functional_correctness(self, prediction: str, expected_keywords: List[str]) -> float:

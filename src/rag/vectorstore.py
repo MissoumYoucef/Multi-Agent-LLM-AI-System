@@ -3,18 +3,25 @@ from typing import List
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
-from ..utils.config import GOOGLE_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP, EMBEDDING_MODEL, VECTOR_STORE_PATH
+from ..utils.config import GOOGLE_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP, EMBEDDING_MODEL, VECTOR_STORE_PATH, USE_LOCAL, LOCAL_EMBEDDING_MODEL
 
 class VectorStoreManager:
     def __init__(self):
-        if not GOOGLE_API_KEY:
-            raise ValueError("GOOGLE_API_KEY is not set")
-        
-        self.embeddings = GoogleGenerativeAIEmbeddings(
-            model=EMBEDDING_MODEL,
-            google_api_key=GOOGLE_API_KEY
-        )
+        if USE_LOCAL:
+            print(f"Using local embeddings: {LOCAL_EMBEDDING_MODEL}")
+            self.embeddings = HuggingFaceEmbeddings(
+                model_name=LOCAL_EMBEDDING_MODEL
+            )
+        else:
+            if not GOOGLE_API_KEY:
+                raise ValueError("GOOGLE_API_KEY is not set and USE_LOCAL is false")
+            
+            self.embeddings = GoogleGenerativeAIEmbeddings(
+                model=EMBEDDING_MODEL,
+                google_api_key=GOOGLE_API_KEY
+            )
         self.vector_store_path = VECTOR_STORE_PATH
 
     def create_vector_store(self, documents: List[Document]):

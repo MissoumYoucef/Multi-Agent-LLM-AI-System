@@ -12,7 +12,7 @@ async def run_evaluation():
     print("--- Starting Evaluation ---")
     
     # 1. Load Data
-    loader = PDFLoader(PDF_DATA_PATH)
+    loader = PDFLoader(PDF_DATA_PATH, load_all=True)
     documents = loader.load_documents()
     if not documents:
         print("No documents found. Exiting.")

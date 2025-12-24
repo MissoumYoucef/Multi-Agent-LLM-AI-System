@@ -7,18 +7,14 @@ The agent explicitly thinks through problems before taking actions.
 import logging
 from typing import List, Optional, Any, Dict
 from langchain_google_genai import ChatGoogleGenerativeAI
-# from langchain.prompts import PromptTemplate
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import PromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-# from langchain.agents import AgentExecutor, create_react_agent
 from langchain_classic.agents import create_react_agent
-# from langchain_core.agents import AgentExecutor
 from langchain_classic.agents import AgentExecutor
-
 from langchain_core.tools import BaseTool
-
 from .tools import get_tools, calculate, summarize, format_as_list, extract_keywords
-from ..utils.config import GOOGLE_API_KEY, LLM_MODEL
+from ..utils.config import GOOGLE_API_KEY, LLM_MODEL, USE_LOCAL, LOCAL_LLM_MODEL, OLLAMA_BASE_URL
 
 logger = logging.getLogger(__name__)
 
@@ -74,11 +70,19 @@ class ReActAgent:
         self.verbose = verbose
         
         # Initialize LLM
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=GOOGLE_API_KEY,
-            temperature=0.3  # Lower temperature for more focused reasoning
-        )
+        if USE_LOCAL:
+            logger.info(f"Using local LLM for ReActAgent: {LOCAL_LLM_MODEL}")
+            self.llm = ChatOllama(
+                model=LOCAL_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL,
+                temperature=0.3
+            )
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                google_api_key=GOOGLE_API_KEY,
+                temperature=0.3  # Lower temperature for more focused reasoning
+            )
         
         # Set up tools (exclude search_documents as it needs retriever injection)
         self.tools = tools or [calculate, summarize, format_as_list, extract_keywords]
@@ -212,10 +216,17 @@ class SimpleReActAgent:
         self.model_name = model or LLM_MODEL
         self.max_steps = max_steps
         
-        self.llm = ChatGoogleGenerativeAI(
-            model=self.model_name,
-            google_api_key=GOOGLE_API_KEY
-        )
+        if USE_LOCAL:
+            logger.info(f"Using local LLM for SimpleReActAgent: {LOCAL_LLM_MODEL}")
+            self.llm = ChatOllama(
+                model=LOCAL_LLM_MODEL,
+                base_url=OLLAMA_BASE_URL
+            )
+        else:
+            self.llm = ChatGoogleGenerativeAI(
+                model=self.model_name,
+                google_api_key=GOOGLE_API_KEY
+            )
         
         self.prompt = PromptTemplate(
             template="""You are a reasoning assistant. Think step by step.
