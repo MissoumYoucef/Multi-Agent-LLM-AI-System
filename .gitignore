@@ -149,3 +149,8 @@ cython_debug/
 
 # VS Code
 .vscode/
+
+# Project Specific
+chroma_db/
+*.pdf
+data/pdfs/
