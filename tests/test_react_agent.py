@@ -65,11 +65,12 @@ class TestReActAgent:
         
         with patch('src.agents.react_agent.ChatGoogleGenerativeAI') as mock_llm:
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
-                mock_create.return_value = MagicMock()
-                agent = ReActAgent()
-                
-                assert agent.tools is not None
-                assert len(agent.tools) >= 1
+                with patch('src.agents.react_agent.AgentExecutor') as mock_executor:
+                    mock_create.return_value = MagicMock()
+                    agent = ReActAgent()
+                    
+                    assert agent.tools is not None
+                    assert len(agent.tools) >= 1
     
     def test_extract_reasoning(self):
         """Test reasoning extraction from steps."""
@@ -77,8 +78,9 @@ class TestReActAgent:
         
         with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
-                mock_create.return_value = MagicMock()
-                agent = ReActAgent()
+                with patch('src.agents.react_agent.AgentExecutor'):
+                    mock_create.return_value = MagicMock()
+                    agent = ReActAgent()
                 
                 # Mock action
                 mock_action = MagicMock()
@@ -99,8 +101,9 @@ class TestReActAgent:
         
         with patch('src.agents.react_agent.ChatGoogleGenerativeAI'):
             with patch('src.agents.react_agent.create_react_agent') as mock_create:
-                mock_create.return_value = MagicMock()
-                agent = ReActAgent()
+                with patch('src.agents.react_agent.AgentExecutor'):
+                    mock_create.return_value = MagicMock()
+                    agent = ReActAgent()
                 
                 result = {"reasoning": []}
                 trace = agent.get_reasoning_trace(result)

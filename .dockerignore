@@ -1,0 +1,24 @@
+# Docker ignore file
+.git
+.gitignore
+.dockerignore
+.vscode
+.idea
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache
+.coverage
+htmlcov
+.venv
+venv
+ENV
+.env
+
+# Project specific
+tests/
+README.md
+docker-compose.yml
+evaluate.py
+begin

@@ -16,8 +16,6 @@ from langchain_classic.agents import create_react_agent
 from langchain_classic.agents import AgentExecutor
 
 from langchain_core.tools import BaseTool
-# from langchain import hub
-from langchainhub import hub 
 
 from .tools import get_tools, calculate, summarize, format_as_list, extract_keywords
 from ..utils.config import GOOGLE_API_KEY, LLM_MODEL
