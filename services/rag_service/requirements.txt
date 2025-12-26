@@ -14,6 +14,10 @@ pypdf>=4.0.0
 chromadb>=0.4.22
 rank_bm25>=0.2.2
 
+# Local embedding support
+sentence-transformers>=2.2.0
+langchain-huggingface>=0.0.1
+
 # Configuration
 python-dotenv>=1.0.0
 google-generativeai>=0.3.2

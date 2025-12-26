@@ -1,0 +1,44 @@
+# =============================================================================
+# Prometheus Configuration
+# =============================================================================
+# Scrapes metrics from the LLM RAG Agent services
+# =============================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+# Alertmanager configuration (optional)
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+# Rule files (optional)
+rule_files: []
+
+# Scrape configurations
+scrape_configs:
+  # Prometheus self-monitoring
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # RAG Service metrics
+  - job_name: "rag-service"
+    static_configs:
+      - targets: ["rag-service:8001"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Inference Service metrics
+  - job_name: "inference-service"
+    static_configs:
+      - targets: ["inference-service:8000"]
+    metrics_path: /metrics
+    scrape_interval: 30s
+
+  # Redis metrics (if redis_exporter is added)
+  # - job_name: "redis"
+  #   static_configs:
+  #     - targets: ["redis-exporter:9121"]

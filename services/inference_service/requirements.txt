@@ -7,6 +7,7 @@ httpx>=0.26.0  # For calling RAG service
 # LangChain Agent components
 langchain>=0.1.0
 langchain-google-genai>=0.0.9
+langchain-ollama>=0.1.0  # Local LLM support
 langgraph>=0.0.10
 
 # Configuration

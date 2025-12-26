@@ -54,7 +54,7 @@ class AgentState(TypedDict):
     # Error handling fields
     error_count: int
     last_error: str
-    # New utility fields
+    # Cache and cost control fields
     cache_hit: bool
     cost_estimate: float
     token_count: int
@@ -63,7 +63,7 @@ class AgentState(TypedDict):
 
 class Orchestrator:
     """
-    Enhanced orchestrator with guardrails, ReAct, self-reflection, and integrated utilities.
+    Orchestrator with guardrails, ReAct, self-reflection, and integrated Cache and cost control.
     
     Workflow: Input Guardrail → [Cache Check] → [Optional ReAct] → Retrieve → Solve → 
               Analyze → Self-Reflect → [Evaluate] → Output Guardrail → [Cache Store]
@@ -84,7 +84,6 @@ class Orchestrator:
         enable_reflection: bool = True,
         enable_react: bool = False,  # Off by default for faster processing
         reflection_threshold: float = 0.7,
-        # New integration parameters
         enable_caching: bool = True,
         enable_cost_control: bool = True,
         enable_memory: bool = True,
@@ -93,7 +92,7 @@ class Orchestrator:
         session_id: str = "default"
     ):
         """
-        Initialize enhanced orchestrator.
+        Initialize orchestrator.
         
         Args:
             retriever: The hybrid retriever for RAG.
@@ -119,7 +118,7 @@ class Orchestrator:
         self.solver = SolverAgent()
         self.analyzer = AnalyzerAgent()
         
-        # Initialize new pattern components
+        # Initialize pattern components
         if enable_guardrails:
             self.input_guardrail = InputGuardrail()
             self.output_guardrail = OutputGuardrail()
@@ -182,14 +181,14 @@ class Orchestrator:
             reset_timeout=60.0
         )
         
-        self.workflow = self._create_enhanced_workflow()
+        self.workflow = self._create_workflow()
         logger.info(f"Orchestrator initialized: guardrails={enable_guardrails}, "
                    f"reflection={enable_reflection}, react={enable_react}, "
                    f"caching={self.enable_caching}, cost_control={self.enable_cost_control}, "
                    f"memory={self.enable_memory}, evaluation={self.enable_evaluation}")
 
-    def _create_enhanced_workflow(self):
-        """Create the enhanced workflow with conditional nodes."""
+    def _create_workflow(self):
+        """Create the workflow with conditional nodes."""
         workflow = StateGraph(AgentState)
 
         # Add nodes
