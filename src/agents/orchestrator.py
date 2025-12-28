@@ -25,7 +25,7 @@ from ..utils.cost_controller import CostController, BudgetPeriod
 from ..utils.token_manager import TokenManager
 from ..utils.config import (
     CACHE_ENABLED, CACHE_TTL_SECONDS, DAILY_BUDGET_USD, 
-    COST_ALERT_THRESHOLD, MEMORY_BUFFER_SIZE
+    COST_ALERT_THRESHOLD, MEMORY_BUFFER_SIZE, REDIS_URL
 )
 from ..memory.memory_manager import MemoryManager
 from ..evaluation.continuous_eval import ContinuousEvaluator
@@ -141,7 +141,8 @@ class Orchestrator:
             self.cache = ResponseCache(
                 max_size=1000,
                 default_ttl=CACHE_TTL_SECONDS,
-                enable_semantic=False  # Simple exact-match caching
+                enable_semantic=False,  # Simple exact-match caching
+                redis_url=REDIS_URL
             )
             logger.info("Response caching enabled")
         

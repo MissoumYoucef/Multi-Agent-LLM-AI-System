@@ -227,7 +227,57 @@ Edit `.env` to match your desired setup.
 | `LLM_MODEL` | `gemini-pro` | Cloud model name. |
 | `RETRIEVER_K` | `3` | Number of documents to retrieve. |
 | `BM25_WEIGHT` | `0.5` | Weight for keyword search (0.0 - 1.0). |
+## 📊 Observability & Monitoring
 
+The system includes a full observability stack to monitor performance, trace requests, and debug issues.
+
+### 🧱 Component Stack
+- **Prometheus**: Collects and stores real-time metrics (latency, throughput, cache hits).
+- **Grafana**: Provides visual dashboards for all metrics and traces.
+- **Jaeger**: Distributed tracing to visualize the lifecycle of LLM requests.
+- **Redis**: High-performance caching for response optimization and cost reduction.
+
+### 🛠️ Local Setup (Binary Mode)
+If you are running the system without Docker, you can start the observability services using the provided script:
+
+1. **Start Services:**
+   ```bash
+   chmod +x run_local.sh
+   ./run_local.sh
+   ```
+   *This script starts Prometheus, Grafana, Jaeger, and Redis in the background.*
+
+2. **Verify Endpoints:**
+   | Service | Local URL | Description |
+   |---------|-----------|-------------|
+   | **Grafana** | [http://localhost:3000](http://localhost:3000) | Main Dashboard UI |
+   | **Prometheus** | [http://localhost:9091](http://localhost:9091) | Metrics Explorer |
+   | **Jaeger** | [http://localhost:16686](http://localhost:16686) | Distributed Tracing UI |
+   | **Redis** | `localhost:6379` | Caching Layer |
+
+### 🐳 Docker Setup
+The observability stack is fully integrated into the `docker-compose.yml`.
+
+```bash
+docker-compose up -d
+```
+All services are automatically provisioned with datasources and dashboards.
+
+---
+
+## 📤 Distribution & Safety
+
+> [!CAUTION]
+> **Sensitive Information Check:**
+> Before pushing changes to a public repository, ensure that your `.env` file and `data/` directory are **NOT** staged. The repository's `.gitignore` is configured to protect these files.
+
+### Standard Push Workflow
+1. **Verify Status:** `git status` (should not show `.env`)
+2. **Stage Configs:** `git add prometheus.yml grafana_provisioning/ run_local.sh`
+3. **Commit:** `git commit -m "feat: integrate observability stack"`
+4. **Push:** `git push origin main`
+
+---
 ---
 
 ## ▶️ Running the System

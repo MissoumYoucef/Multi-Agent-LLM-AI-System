@@ -154,3 +154,4 @@ cython_debug/
 chroma_db/
 *.pdf
 data/pdfs/
+grafana_local.ini

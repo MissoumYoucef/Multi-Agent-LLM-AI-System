@@ -13,6 +13,20 @@ from dataclasses import dataclass, field
 from collections import OrderedDict
 from functools import lru_cache
 
+try:
+    from prometheus_client import Counter
+    CACHE_HITS = Counter("cache_hits_total", "Total number of cache hits", ["type"])
+    CACHE_MISSES = Counter("cache_misses_total", "Total number of cache misses", ["type"])
+    
+    # Initialize labels to ensure they show up in Prometheus
+    for t in ["local", "redis", "semantic", "total"]:
+        CACHE_HITS.labels(type=t)
+        CACHE_MISSES.labels(type=t)
+        
+    METRICS_AVAILABLE = True
+except ImportError:
+    METRICS_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -217,6 +231,8 @@ class ResponseCache:
         entry = self._local_cache.get(key)
         if entry:
             logger.debug(f"Cache hit (local): {key[:8]}...")
+            if METRICS_AVAILABLE:
+                CACHE_HITS.labels(type="local").inc()
             return entry.value
         
         # Try Redis if available
@@ -225,7 +241,11 @@ class ResponseCache:
                 value = self._redis_client.get(f"cache:{key}")
                 if value:
                     logger.debug(f"Cache hit (redis): {key[:8]}...")
+                    if METRICS_AVAILABLE:
+                        CACHE_HITS.labels(type="redis").inc()
                     return value.decode() if isinstance(value, bytes) else value
+                elif METRICS_AVAILABLE:
+                    CACHE_MISSES.labels(type="redis").inc()
             except Exception as e:
                 logger.warning(f"Redis get failed: {e}")
         
@@ -234,8 +254,17 @@ class ResponseCache:
             match = self._find_semantic_match(query, threshold)
             if match:
                 logger.debug("Cache hit (semantic)")
+                if METRICS_AVAILABLE:
+                    CACHE_HITS.labels(type="semantic").inc()
                 return match
+            elif METRICS_AVAILABLE:
+                CACHE_MISSES.labels(type="semantic").inc()
         
+        # Record final miss
+        if METRICS_AVAILABLE:
+            CACHE_MISSES.labels(type="local").inc()
+            CACHE_MISSES.labels(type="total").inc()
+            
         return None
     
     def set(
