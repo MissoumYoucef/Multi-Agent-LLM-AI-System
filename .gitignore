@@ -155,3 +155,12 @@ chroma_db/
 *.pdf
 data/pdfs/
 grafana_local.ini
+
+# K8s guides
+K8S_GUIDE.md
+K8S_SUMMARY.md
+OBSERVABILITY_SETUP_GUIDE.md
+
+# Large Binaries and Data
+monitoring/
+data/

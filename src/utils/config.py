@@ -48,10 +48,12 @@ def get_optional_env(name: str, default: str) -> str:
 GOOGLE_API_KEY: Optional[str] = os.getenv("GOOGLE_API_KEY")
 
 # Local Model Configuration
-USE_LOCAL: bool = GOOGLE_API_KEY is None or os.getenv("USE_LOCAL", "false").lower() == "true"
+# Use local if key is missing/empty OR if USE_LOCAL is explicitly true
+USE_LOCAL: bool = (not GOOGLE_API_KEY or not GOOGLE_API_KEY.strip()) or os.getenv("USE_LOCAL", "false").lower() == "true"
 LOCAL_LLM_MODEL: str = get_optional_env("LOCAL_LLM_MODEL", "llama3.2:1b")
 LOCAL_EMBEDDING_MODEL: str = get_optional_env("LOCAL_EMBEDDING_MODEL", "sentence-transformers/all-MiniLM-L6-v2")
 OLLAMA_BASE_URL: str = get_optional_env("OLLAMA_BASE_URL", "http://localhost:11434")
+
 
 # Model Configuration
 LLM_MODEL: str = get_optional_env("LLM_MODEL", "gemini-pro")
@@ -79,7 +81,7 @@ MEMORY_SESSION_TTL: int = int(get_optional_env("MEMORY_SESSION_TTL", "3600"))
 
 # Caching Configuration
 CACHE_ENABLED: bool = get_optional_env("CACHE_ENABLED", "true").lower() == "true"
-REDIS_URL: str = get_optional_env("REDIS_URL", "redis://localhost:6379")
+REDIS_URL: str = get_optional_env("REDIS_URL", "redis://redis:6379")
 CACHE_TTL_SECONDS: int = int(get_optional_env("CACHE_TTL_SECONDS", "3600"))
 
 # Cost Control

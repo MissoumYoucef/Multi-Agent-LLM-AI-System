@@ -1,5 +1,3 @@
-version: '3.8'
-
 # =============================================================================
 # LLM RAG Agent - Microservices Architecture
 # =============================================================================
@@ -36,15 +34,20 @@ services:
       - .env
     environment:
       - PYTHONUNBUFFERED=1
+      - REDIS_URL=redis://redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434 # Access Ollama on host
     healthcheck:
       test: [ "CMD", "python", "-c", "import httpx; httpx.get('http://localhost:8001/health').raise_for_status()" ]
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
     networks:
       - llm-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # ---------------------------------------------------------------------------
   # Inference Service - LLM Agents
@@ -62,6 +65,9 @@ services:
     environment:
       - PYTHONUNBUFFERED=1
       - RAG_SERVICE_URL=http://rag-service:8001 # Internal Docker network URL
+      - REDIS_URL=redis://redis:6379
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:4317
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434 # Access Ollama on host
     depends_on:
       rag-service:
         condition: service_healthy # Wait for RAG service to be ready
@@ -74,6 +80,8 @@ services:
     restart: unless-stopped
     networks:
       - llm-network
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
 
   # =============================================================================
   # OPTIONAL SERVICES - Uncomment to enable production observability

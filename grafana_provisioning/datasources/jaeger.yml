@@ -1,7 +1,7 @@
 # =============================================================================
-# Grafana Datasource Configuration
+# Grafana Jaeger Datasource Configuration
 # =============================================================================
-# Auto-provisions Prometheus as the default datasource
+# Auto-provisions Jaeger for distributed tracing visualization
 # 
 # USAGE:
 # - For LOCAL development: use localhost URL (default)
@@ -11,14 +11,14 @@
 apiVersion: 1
 
 datasources:
-  - name: Prometheus
-    type: prometheus
-    uid: prometheus
+  - name: Jaeger
+    type: jaeger
+    uid: jaeger
     access: proxy
     # LOCAL: Use localhost
-    # url: http://localhost:9091
+    # url: http://localhost:16686
     # DOCKER: Use container name
-    url: http://prometheus:9090
-    isDefault: true
+    url: http://jaeger:16686
+    isDefault: false
     editable: false
 

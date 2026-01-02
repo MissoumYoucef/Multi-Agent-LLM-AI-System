@@ -1,0 +1,178 @@
+# Redis
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: llm-rag-system
+spec:
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: llm-rag-system
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+---
+# Jaeger
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jaeger
+  namespace: llm-rag-system
+spec:
+  selector:
+    matchLabels:
+      app: jaeger
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:1.52
+        ports:
+        - containerPort: 16686
+        - containerPort: 4317
+        env:
+        - name: COLLECTOR_OTLP_ENABLED
+          value: "true"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: llm-rag-system
+spec:
+  selector:
+    app: jaeger
+  ports:
+  - name: ui
+    port: 16686
+    targetPort: 16686
+  - name: otlp
+    port: 4317
+    targetPort: 4317
+---
+# Prometheus
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: llm-rag-system
+spec:
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      containers:
+      - name: prometheus
+        image: prom/prometheus:v2.47.0
+        ports:
+        - containerPort: 9090
+        volumeMounts:
+        - name: config
+          mountPath: /etc/prometheus/prometheus.yml
+          subPath: prometheus.yml
+      volumes:
+      - name: config
+        configMap:
+          name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: llm-rag-system
+spec:
+  selector:
+    app: prometheus
+  ports:
+  - port: 9090
+    targetPort: 9090
+---
+# Grafana
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: llm-rag-system
+spec:
+  selector:
+    matchLabels:
+      app: grafana
+  template:
+    metadata:
+      labels:
+        app: grafana
+    spec:
+      containers:
+      - name: grafana
+        image: grafana/grafana:10.2.0
+        ports:
+        - containerPort: 3000
+        env:
+        - name: GF_SECURITY_ADMIN_PASSWORD
+          value: "admin"
+        volumeMounts:
+        - name: provisioning-datasources
+          mountPath: /etc/grafana/provisioning/datasources
+        - name: provisioning-dashboards
+          mountPath: /etc/grafana/provisioning/dashboards
+        - name: dashboard-files
+          mountPath: /var/lib/grafana/dashboards
+      volumes:
+      - name: provisioning-datasources
+        configMap:
+          name: grafana-config
+          items:
+          - key: prometheus-datasource.yml
+            path: prometheus.yml
+          - key: jaeger-datasource.yml
+            path: jaeger.yml
+      - name: provisioning-dashboards
+        configMap:
+          name: grafana-config
+          items:
+          - key: dashboards.yml
+            path: dashboards.yml
+      - name: dashboard-files
+        configMap:
+          name: grafana-config
+          items:
+          - key: llm-overview.json
+            path: llm-overview.json
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: llm-rag-system
+spec:
+  selector:
+    app: grafana
+  ports:
+  - port: 3000
+    targetPort: 3000

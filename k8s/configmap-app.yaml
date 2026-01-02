@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: llm-app-config
+  namespace: llm-rag-system
+data:
+  USE_LOCAL: "true"
+  LOCAL_LLM_MODEL: "llama3.2:1b"
+  LOCAL_EMBEDDING_MODEL: "sentence-transformers/all-MiniLM-L6-v2"
+  OLLAMA_BASE_URL: "http://ollama-host:11434"
+  LLM_MODEL: "gemini-pro"
+  EMBEDDING_MODEL: "models/embedding-001"
+  CHUNK_SIZE: "1000"
+  CHUNK_OVERLAP: "200"
+  RETRIEVER_K: "3"
+  BM25_WEIGHT: "0.5"
+  VECTOR_WEIGHT: "0.5"
+  VECTOR_STORE_PATH: "/app/chroma_db"
+  PDF_DATA_PATH: "/app/data/pdfs"
+  LOG_LEVEL: "INFO"
+  CACHE_ENABLED: "true"
+  REDIS_URL: "redis://redis:6379"
+  TRACING_ENABLED: "true"
+  TRACING_SERVICE_NAME: "llm-agents"
+  OTEL_EXPORTER_OTLP_ENDPOINT: "http://jaeger:4317"
+  PYTHONUNBUFFERED: "1"
+  RAG_SERVICE_URL: "http://rag-service:8001"

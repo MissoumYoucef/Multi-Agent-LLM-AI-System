@@ -16,4 +16,4 @@ providers:
     updateIntervalSeconds: 10
     allowUiUpdates: true
     options:
-      path: /home/missoum/Desktop/Projects/Multi-Agent-LLM-AI-System/grafana_provisioning/dashboards
+      path: /var/lib/grafana/dashboards

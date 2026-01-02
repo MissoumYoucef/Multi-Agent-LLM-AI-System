@@ -3,13 +3,25 @@ fastapi>=0.109.0
 uvicorn[standard]>=0.25.0
 pydantic>=2.0.0
 httpx>=0.26.0  # For calling RAG service
+requests>=2.31.0  # For RemoteRetriever
 
 # LangChain Agent components
 langchain>=0.1.0
 langchain-google-genai>=0.0.9
 langchain-ollama>=0.1.0  # Local LLM support
 langgraph>=0.0.10
+langchain-classic>=1.0.0
 
 # Configuration
 python-dotenv>=1.0.0
 google-generativeai>=0.3.2
+
+# Metrics and tracing
+prometheus-fastapi-instrumentator>=6.0.0
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+opentelemetry-exporter-otlp>=1.20.0
+opentelemetry-instrumentation-fastapi>=0.41b0
+
+# Caching
+redis>=4.0.0

@@ -34,13 +34,15 @@ def setup_tracing(app, service_name=None):
     
     # Use OTLP exporter (default for Jaeger)
     # Jaeger OTLP gRPC port is 4317 by default
-    otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317")
-    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True))
-    provider.add_span_processor(processor)
+    otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317")
     
-    trace.set_tracer_provider(provider)
-    
-    # Instrument FastAPI
-    FastAPIInstrumentor.instrument_app(app)
-    
-    logger.info("Tracing setup complete.")
+    try:
+        processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True))
+        provider.add_span_processor(processor)
+        trace.set_tracer_provider(provider)
+        
+        # Instrument FastAPI
+        FastAPIInstrumentor.instrument_app(app)
+        logger.info(f"Tracing setup complete (endpoint: {otlp_endpoint}).")
+    except Exception as e:
+        logger.error(f"Failed to setup tracing: {e}")

@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rag-service
+  namespace: llm-rag-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rag-service
+  template:
+    metadata:
+      labels:
+        app: rag-service
+    spec:
+      containers:
+      - name: rag-service
+        image: llm-rag-service:latest # Ensure this image is built and available
+        imagePullPolicy: Never # For local development like Minikube
+        ports:
+        - containerPort: 8001
+        envFrom:
+        - configMapRef:
+            name: llm-app-config
+        env:
+        - name: GOOGLE_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: llm-secrets
+              key: google-api-key
+              optional: true
+        volumeMounts:
+        - name: chroma-data
+          mountPath: /app/chroma_db
+        - name: pdf-data
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8001
+          initialDelaySeconds: 60
+          periodSeconds: 30
+      volumes:
+      - name: chroma-data
+        emptyDir: {} # Use PersistentVolumeClaim for production
+      - name: pdf-data
+        hostPath:
+          path: /home/missoum/Desktop/Projects/Multi-Agent-LLM-AI-System/data
+          type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rag-service
+  namespace: llm-rag-system
+spec:
+  selector:
+    app: rag-service
+  ports:
+  - port: 8001
+    targetPort: 8001
+  type: ClusterIP

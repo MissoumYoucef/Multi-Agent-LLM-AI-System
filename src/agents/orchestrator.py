@@ -6,10 +6,11 @@ and integrated utilities for caching, cost control, memory, and evaluation.
 """
 import logging
 import time
-from typing import TypedDict, Annotated, Sequence, Optional, Literal, Dict, Any
+from typing import TypedDict, Annotated, Sequence, Optional, Literal, Dict, Any, Protocol, List, TYPE_CHECKING
 import operator
 from langgraph.graph import StateGraph, END
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage
+from langchain_core.documents import Document
 
 from .chatbot import ChatbotAgent
 from .solver import SolverAgent
@@ -17,7 +18,18 @@ from .analyzer import AnalyzerAgent
 from .guardrails import InputGuardrail, OutputGuardrail, GuardrailStatus
 from .reflective_agent import ReflectiveAgent
 from .react_agent import SimpleReActAgent
-from ..rag.retriever import HybridRetriever
+
+# Define a Protocol for retrievers to decouple from the actual HybridRetriever class
+# This allows the orchestrator to work with any object that has a retrieve() method
+class RetrieverProtocol(Protocol):
+    """Protocol for retriever objects. Any object with a matching retrieve method will work."""
+    def retrieve(self, query: str) -> List[Document]:
+        ...
+
+# Conditional import - only for type checking, not at runtime
+# This prevents ModuleNotFoundError when running in the inference-service container
+if TYPE_CHECKING:
+    from ..rag.retriever import HybridRetriever
 
 # Integrated utility imports
 from ..utils.cache import ResponseCache
@@ -79,7 +91,7 @@ class Orchestrator:
     
     def __init__(
         self,
-        retriever: HybridRetriever,
+        retriever: RetrieverProtocol,
         enable_guardrails: bool = True,
         enable_reflection: bool = True,
         enable_react: bool = False,  # Off by default for faster processing

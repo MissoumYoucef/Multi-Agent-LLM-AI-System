@@ -4,7 +4,7 @@
 # =============================================================================
 
 # --- Stage 1: Builder ---
-FROM python:3.9-slim AS builder
+FROM python:3.10-slim AS builder
 
 WORKDIR /build
 
@@ -23,7 +23,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # --- Stage 2: Runtime ---
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 
@@ -35,16 +35,19 @@ ENV PATH="/opt/venv/bin:$PATH"
 # 1. The service entrypoint
 COPY services/inference_service/app.py ./services/inference_service/
 
-# 2. The Agents module (chatbot, solver, analyzer)
-COPY src/agents/chatbot.py ./src/agents/
-COPY src/agents/solver.py ./src/agents/
-COPY src/agents/analyzer.py ./src/agents/
-COPY src/agents/__init__.py ./src/agents/
+# 2. The Agents module (all agents needed by orchestrator)
+COPY src/agents/ ./src/agents/
 
-# 3. Utils (config)
+# 3. Memory module (required by orchestrator)
+COPY src/memory/ ./src/memory/
+
+# 4. Evaluation module (required by orchestrator)
+COPY src/evaluation/ ./src/evaluation/
+
+# 5. Utils (config, cache, cost_controller, tracing, etc.)
 COPY src/utils/ ./src/utils/
 
-# 4. Make src a package
+# 6. Make src a package
 COPY src/__init__.py ./src/
 
 # NOTE: We do NOT copy src/rag/ - that's the RAG service's responsibility.

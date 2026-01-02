@@ -1,6 +1,8 @@
 # 🤖 Multi-Agent RAG System with LLM Orchestration
 
-A production-ready **Multi-Agent LLM System** built with **LangChain** and **LangGraph**, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, and comprehensive **guardrails**. It is designed for scalable, reliable AI-powered document Q&A, capable of running both in the cloud (Google Gemini) and locally (Ollama).
+This project is derived from my previous work on multi-agent systems and advanced AI architectures. Because the original work remains private and proprietary to my company, this repository serves as an open-source implementation of those concepts—sharing the fundamental architecture and core modules, while omitting certain complex proprietary industrial features.
+
+It is a production-ready **Multi-Agent LLM System** built with **LangChain** and **LangGraph**, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, and comprehensive **guardrails**. It is designed for scalable, reliable AI-powered document Q&A, capable of running both in the cloud (Google Gemini) and locally (Ollama).
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-0.1+-green.svg)
@@ -189,8 +191,8 @@ Handles document ingestion and context retrieval.
 
 ### 1. Clone the Repository
 ```bash
-git clone https://github.com/your-username/AI-Math-Agent---LLM.git
-cd AI-Math-Agent---LLM/Project
+git clone https://github.com/MissoumYoucef/Multi-Agent-LLM-AI-System.git
+cd Multi-Agent-LLM-AI-System
 ```
 
 ### 2. Create Virtual Environment
@@ -318,11 +320,85 @@ Best for privacy and offline usage.
 
 ## 🐳 Docker Deployment
 
-To deploy the full microservices stack (Inference, RAG, Observability):
+The system is fully containerized using a microservices architecture. This allows you to run all components (Inference, RAG, and Observability) with a single command.
 
+### 1. Build and Start Services
 ```bash
-docker-compose up -d
+# Build the images and start the containers in background
+docker-compose up -d --build
 ```
+
+### 2. Verify Container Status
+```bash
+docker-compose ps
+```
+
+### 3. Service Access Overview
+| Service | Internal Port | External Port | Role |
+|---------|---------------|---------------|------|
+| `inference-service` | 8000 | [8000](http://localhost:8000) | Main Agent API |
+| `rag-service` | 8001 | [8001](http://localhost:8001) | Retrieval Engine |
+| `redis` | 6379 | 6379 | Response Cache |
+| `jaeger` | 16686 | [16686](http://localhost:16686) | Tracing UI |
+| `prometheus` | 9090 | [9090](http://localhost:9090) | Metrics |
+| `grafana` | 3000 | [3000](http://localhost:3000) | Dashboards |
+
+### 4. Important Docker Volumes
+- `chroma_data`: Persists your vector database embeddings.
+- `./data`: (Bind Mount) Local PDFs are automatically indexed from this folder.
+- `redis_data`, `prometheus_data`, `grafana_data`: Persistent storage for monitoring data.
+
+### 5. Connecting to Local Ollama
+The `docker-compose.yml` is configured to connect to Ollama running on your host machine via `host.docker.internal:11434`. Ensure Ollama is running and accessible on your host.
+
+## ☸️ Kubernetes Deployment
+
+For production-grade deployment, the system includes full Kubernetes manifests in the `k8s/` directory.
+
+### Prerequisites
+
+1.  **kubectl**: Installed and configured.
+2.  **Minikube** (or other cluster): Running.
+
+### Quick Start (Minikube)
+
+1.  **Build Images in Cluster:**
+    ```bash
+    eval $(minikube docker-env)
+    docker build -t llm-rag-service:latest -f services/rag_service/Dockerfile .
+    docker build -t llm-inference-service:latest -f services/inference_service/Dockerfile .
+    ```
+
+2.  **Create Namespace & Secrets:**
+    ```bash
+    kubectl apply -f k8s/namespace.yaml
+    # If using Cloud Gemini
+    kubectl create secret generic llm-secrets --from-literal=google-api-key="YOUR_KEY" -n llm-rag-system
+    ```
+
+3.  **Apply Configurations:**
+    ```bash
+    kubectl apply -f k8s/configmap-app.yaml -n llm-rag-system
+    kubectl apply -f k8s/configmap-prometheus.yaml -n llm-rag-system
+    kubectl apply -f k8s/configmap-grafana.yaml -n llm-rag-system
+    ```
+
+4.  **Deploy Services:**
+    ```bash
+    # Observability (Redis, Jaeger, Prometheus, Grafana)
+    kubectl apply -f k8s/observability.yaml -n llm-rag-system
+    
+    # RAG & Inference
+    kubectl apply -f k8s/rag-service.yaml -n llm-rag-system
+    kubectl apply -f k8s/inference-service.yaml -n llm-rag-system
+    ```
+
+5.  **Access Services (Port Forwarding):**
+    ```bash
+    kubectl port-forward svc/grafana 3000:3000 -n llm-rag-system
+    kubectl port-forward svc/inference-service 8000:8000 -n llm-rag-system
+    ```
+
 
 ### Microservices Architecture
 

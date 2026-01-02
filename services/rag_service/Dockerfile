@@ -4,7 +4,7 @@
 # =============================================================================
 
 # --- Stage 1: Builder ---
-FROM python:3.9-slim AS builder
+FROM python:3.10-slim AS builder
 
 WORKDIR /build
 
@@ -21,9 +21,9 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH" 
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
-    # --no-cache-dir = Meta data, archived files , .whl
+# --no-cache-dir = Meta data, archived files , .whl
 # --- Stage 2: Runtime ---
-FROM python:3.9-slim
+FROM python:3.10-slim
 
 WORKDIR /app
 

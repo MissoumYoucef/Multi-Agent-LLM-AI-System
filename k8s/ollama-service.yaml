@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-host
+  namespace: llm-rag-system
+spec:
+  ports:
+  - port: 11434
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: ollama-host
+  namespace: llm-rag-system
+subsets:
+  - addresses:
+      - ip: 138.195.44.206 # CHANGE THIS to your host machine IP or use 'host.docker.internal equivalent'
+    ports:
+      - port: 11434
