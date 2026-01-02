@@ -2,7 +2,7 @@
 
 This project is derived from my previous work on multi-agent systems and advanced AI architectures. Because the original work remains private and proprietary to my company, this repository serves as an open-source implementation of those concepts—sharing the fundamental architecture and core modules, while omitting certain complex proprietary industrial features.
 
-It is a production-ready **Multi-Agent LLM System** built with **LangChain** and **LangGraph**, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, and comprehensive **guardrails**. It is designed for scalable, reliable AI-powered document Q&A, capable of running both in the cloud (Google Gemini) and locally (Ollama).
+It is a production-ready **Multi-Agent LLM System** built with **LangChain** and **LangGraph**, featuring **Retrieval-Augmented Generation (RAG)**, **self-reflection**, **ReAct reasoning**, comprehensive **guardrails**, and **full monitoring** with **Grafana**, **Prometheus**, and **Jaeger**. It is designed for scalable, reliable AI-powered document Q&A, capable of running both in the cloud (Google Gemini) and locally (Ollama).
 
 ![Python](https://img.shields.io/badge/Python-3.9+-blue.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-0.1+-green.svg)
