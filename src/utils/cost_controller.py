@@ -288,7 +288,8 @@ class CostController:
         if now - last_sent >= self._alert_cooldown:
             self._alerts_sent[key] = now
             logger.warning(f"COST ALERT: {message}")
-            # In production, this would send to monitoring system
+            # Production: Integrate with monitoring systems (Prometheus AlertManager, 
+            # PagerDuty, Slack webhooks, etc.)
 
     def cleanup_old_records(self, days: int = 30) -> int:
         """Remove records older than specified days."""

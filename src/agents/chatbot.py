@@ -19,8 +19,8 @@ class ChatbotAgent:
     """
     A general-purpose chatbot agent that responds to user questions.
 
-    Uses Google's Gemini model for generating responses.
-    Supports optional conversation memory for multi-turn interactions.
+    Supports both Google Gemini (cloud) and Ollama (local) LLM backends.
+    Can optionally use conversation memory for multi-turn interactions.
     """
 
     def __init__(

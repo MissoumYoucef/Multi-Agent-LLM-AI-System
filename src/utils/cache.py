@@ -338,8 +338,12 @@ class ResponseCache:
         """
         Find semantically similar cached query.
 
-        Note: This is a placeholder. Production implementation
-        would use embedding-based similarity.
+        Production implementation should:
+        1. Generate embeddings for the query using the same model as documents
+        2. Compute cosine similarity against cached query embeddings
+        3. Return cached response if similarity >= threshold
+        
+        Current implementation: Simple exact normalized string matching.
         """
         # Simplified: exact normalized match only
         # Full implementation would compute embeddings and cosine similarity

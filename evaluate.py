@@ -9,6 +9,19 @@ from src.evaluation.metrics import EvaluationMetrics
 from src.utils.config import PDF_DATA_PATH
 
 async def run_evaluation():
+    """
+    Run evaluation pipeline for the Multi-Agent RAG System.
+    
+    This function:
+    1. Loads documents and creates the RAG pipeline
+    2. Initializes the orchestrator with all agents
+    3. Runs evaluation metrics (functional correctness, lexical similarity, AI judge)
+       against a static test dataset
+    4. Computes and displays aggregate performance metrics
+    
+    Note: Currently uses a static dataset for demonstration. In production,
+    load evaluation datasets from JSON files for comprehensive testing.
+    """
     print("--- Starting Evaluation ---")
     
     # 1. Load Data
@@ -28,8 +41,9 @@ async def run_evaluation():
 
     # 4. Define Evaluation Dataset (Static)
     print("\n--- Using Static Evaluation Dataset ---")
-    # Since we removed the generator, we use a static list or load from file.
-    # Ideally, this should be loaded from a json file.
+    # For production use, load evaluation datasets from a JSON file containing
+    # question-answer pairs. This static dataset is for demonstration purposes only.
+    # Example format: [{"question": "...", "answer": "..."}]
     dataset = [
         {"question": "What is the main topic of the document?", "answer": "Refer to text.pdf content"},
         {"question": "Summarize the key points.", "answer": "Refer to text.pdf content"}

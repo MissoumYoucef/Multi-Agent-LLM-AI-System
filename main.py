@@ -9,6 +9,12 @@ from src.utils.config import PDF_DATA_PATH, DAILY_BUDGET_USD, CACHE_ENABLED
 from src.rag.freshness_tracker import create_freshness_tracker
 
 def main():
+    """
+    Main entry point for the Multi-Agent RAG System.
+    
+    Initializes the RAG pipeline with document loading, vector store creation,
+    and orchestrator setup. Provides an interactive loop for user queries.
+    """
     print("--- Multi-Agent RAG System ---")
 
     # Initialize Freshness Tracker

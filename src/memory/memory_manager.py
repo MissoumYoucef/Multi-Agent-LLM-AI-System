@@ -60,7 +60,9 @@ class MemoryManager:
             self.summary_memory = None
 
         if enable_persistence:
-            self.store = MessageStore(default_ttl=session_ttl * 24)  # 24x TTL for storage
+            # Store sessions 24x longer than active session TTL to preserve conversation
+            # history even after sessions expire. This allows session recovery and analytics.
+            self.store = MessageStore(default_ttl=session_ttl * 24)
         else:
             self.store = None
 
@@ -213,7 +215,13 @@ class MemoryManager:
         return self.buffer.get_all_session_ids()
 
     def _check_summarization(self, session_id: str) -> None:
-        """Check and trigger summarization if needed."""
+        """
+        Check and trigger summarization if needed.
+        
+        Summarization is triggered when the message buffer exceeds the configured
+        threshold. This helps maintain context while reducing token usage by
+        condensing older messages into a summary while keeping recent messages intact.
+        """
         if not self.enable_summarization or not self.summary_memory:
             return
 

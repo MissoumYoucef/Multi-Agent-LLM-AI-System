@@ -77,7 +77,12 @@ class ContinuousEvaluator:
 
     @property
     def metrics(self):
-        """Lazy load evaluation metrics."""
+        """
+        Lazy load evaluation metrics.
+        
+        Using lazy loading to avoid circular imports and reduce startup time.
+        The EvaluationMetrics class is only imported when first needed.
+        """
         if self._metrics is None:
             from .metrics import EvaluationMetrics
             self._metrics = EvaluationMetrics()
@@ -154,7 +159,17 @@ class ContinuousEvaluator:
         response: str,
         context: str
     ) -> float:
-        """Compute quality score based on heuristics."""
+        """
+        Compute quality score based on heuristics.
+        
+        Evaluates response quality using multiple heuristic checks:
+        - Response length (too short = low quality)
+        - Context utilization (word overlap with source context)
+        - Uncertainty markers (phrases indicating low confidence)
+        - Appropriate length relative to context
+        
+        Returns a score between 0.0 and 1.0.
+        """
         score = 1.0
 
         # Check for empty or very short responses

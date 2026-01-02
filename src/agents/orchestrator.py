@@ -22,7 +22,14 @@ from .react_agent import SimpleReActAgent
 # Define a Protocol for retrievers to decouple from the actual HybridRetriever class
 # This allows the orchestrator to work with any object that has a retrieve() method
 class RetrieverProtocol(Protocol):
-    """Protocol for retriever objects. Any object with a matching retrieve method will work."""
+    """
+    Protocol for retriever objects.
+    
+    Defines the interface for retrieval components without tight coupling to specific
+    implementations. This enables the orchestrator to work with both local retrievers
+    (HybridRetriever) and remote retrievers (microservice calls) seamlessly.
+    Any object with a matching retrieve method signature will satisfy this protocol.
+    """
     def retrieve(self, query: str) -> List[Document]:
         ...
 
@@ -75,7 +82,7 @@ class AgentState(TypedDict):
 
 class Orchestrator:
     """
-    Orchestrator with guardrails, ReAct, self-reflection, and integrated Cache and cost control.
+    Orchestrator with guardrails, ReAct, self-reflection, and integrated caching and cost control.
 
     Workflow: Input Guardrail → [Cache Check] → [Optional ReAct] → Retrieve → Solve →
               Analyze → Self-Reflect → [Evaluate] → Output Guardrail → [Cache Store]

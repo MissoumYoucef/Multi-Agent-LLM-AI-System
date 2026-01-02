@@ -48,19 +48,19 @@ async def lifespan(app: FastAPI):
     global orchestrator
     print("--- Inference Service Starting ---")
     
-    # We need a retriever for the orchestrator, but the orchestrator handles
-    # its own retrieval logic internally if we pass it a retriever object.
-    # However, in this microservice setup, the orchestrator in inference-service
-    # needs to call the RAG-service. 
-    # Let's create a proxy retriever that calls the RAG service.
+    # In a microservices architecture, the orchestrator needs a retriever but retrieval
+    # is handled by the separate RAG service. We create a RemoteRetriever that makes
+    # HTTP calls to the RAG service's /retrieve endpoint, converting the response back
+    # into LangChain Document objects for the orchestrator to use.
     
     class RemoteRetriever:
+        """Proxy retriever that calls the RAG microservice for document retrieval."""
         def __init__(self, url):
             self.url = url
+            
         def retrieve(self, query):
-            import requests # Synchronous call for simplification within Orchestrator nodes if needed
-            # or we can refactor Orchestrator to be async. 
-            # For now, let's assume the Orchestrator can handle the remote call.
+            """Retrieve documents from RAG service via HTTP."""
+            import requests
             response = requests.post(f"{self.url}/retrieve", json={"query": query, "top_k": 5})
             response.raise_for_status()
             data = response.json()

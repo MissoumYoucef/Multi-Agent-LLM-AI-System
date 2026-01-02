@@ -1,3 +1,10 @@
+"""
+Vector Store Manager module.
+
+Provides vector store management for RAG with support for both local and cloud embeddings.
+Handles document splitting, embedding generation, and Chroma vector store operations.
+Integrates with FreshnessTracker for document update tracking.
+"""
 import os
 import logging
 from typing import List, Optional
@@ -72,10 +79,9 @@ class VectorStoreManager:
         splits = text_splitter.split_documents(documents)
         logger.info(f"Created {len(splits)} chunks from {len(documents)} documents.")
 
-        if os.path.exists(self.vector_store_path):
-             # For this implementation, we allow overwriting or appending.
-             # Chroma will handle persistence.
-             pass
+        # Chroma automatically handles persistence when persist_directory is set.
+        # If the directory exists, the new documents will be added to the existing store.
+        # No explicit handling needed for creation vs update scenarios.
 
         vectorstore = Chroma.from_documents(
             documents=splits,
