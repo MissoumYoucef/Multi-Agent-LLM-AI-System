@@ -29,10 +29,10 @@ class ReflectionResult:
 class ReflectiveAgent:
     """
     Self-reflecting agent that evaluates and improves its responses.
-    
+
     Implements a critique -> refine loop for quality improvement.
     """
-    
+
     def __init__(
         self,
         model: str = None,
@@ -41,7 +41,7 @@ class ReflectiveAgent:
     ):
         """
         Initialize the reflective agent.
-        
+
         Args:
             model: Optional model name override.
             quality_threshold: Minimum quality score to accept (0.0-1.0).
@@ -50,7 +50,7 @@ class ReflectiveAgent:
         self.model_name = model or LLM_MODEL
         self.quality_threshold = quality_threshold
         self.max_refinements = max_refinements
-        
+
         if USE_LOCAL:
             logger.info(f"Using local LLM for ReflectiveAgent: {LOCAL_LLM_MODEL}")
             self.llm = ChatOllama(
@@ -62,10 +62,10 @@ class ReflectiveAgent:
                 model=self.model_name,
                 google_api_key=GOOGLE_API_KEY
             )
-        
+
         # Critique prompt
         self.critique_prompt = PromptTemplate(
-            template="""Evaluate the following response to a question. 
+            template="""Evaluate the following response to a question.
 Provide a quality score from 0.0 to 1.0 and constructive feedback.
 
 Question: {question}
@@ -84,7 +84,7 @@ CRITIQUE: [Your critique]
 SUGGESTIONS: [Specific improvements]""",
             input_variables=["question", "context", "response"]
         )
-        
+
         # Refinement prompt
         self.refine_prompt = PromptTemplate(
             template="""Improve the following response based on the feedback provided.
@@ -98,10 +98,10 @@ SUGGESTIONS: [Specific improvements]""",
                 Write an improved response that addresses the feedback:""",
                 input_variables=["question", "context", "response", "critique", "suggestions"]
             )
-        
+
         self.critique_chain = self.critique_prompt | self.llm | StrOutputParser()
         self.refine_chain = self.refine_prompt | self.llm | StrOutputParser()
-        
+
         logger.info(f"ReflectiveAgent initialized with threshold: {quality_threshold}")
 
     def evaluate(
@@ -112,12 +112,12 @@ SUGGESTIONS: [Specific improvements]""",
     ) -> ReflectionResult:
         """
         Evaluate a response quality.
-        
+
         Args:
             question: The original question.
             response: The response to evaluate.
             context: Optional context used for the response.
-            
+
         Returns:
             ReflectionResult with quality assessment.
         """
@@ -128,7 +128,7 @@ SUGGESTIONS: [Specific improvements]""",
                 critique="Empty response provided.",
                 suggestions="Provide a substantive response to the question."
             )
-        
+
         try:
             # Get critique
             critique_output = self.critique_chain.invoke({
@@ -136,17 +136,17 @@ SUGGESTIONS: [Specific improvements]""",
                 "context": context or "No additional context.",
                 "response": response
             })
-            
+
             # Parse the critique
             score, critique, suggestions = self._parse_critique(critique_output)
-            
+
             return ReflectionResult(
                 quality_score=score,
                 is_acceptable=score >= self.quality_threshold,
                 critique=critique,
                 suggestions=suggestions
             )
-            
+
         except Exception as e:
             logger.error(f"Evaluation error: {e}")
             # Return neutral result on error
@@ -160,24 +160,24 @@ SUGGESTIONS: [Specific improvements]""",
     def _parse_critique(self, critique_text: str) -> Tuple[float, str, str]:
         """
         Parse the critique output to extract score, critique, and suggestions.
-        
+
         Args:
             critique_text: Raw critique output.
-            
+
         Returns:
             Tuple of (score, critique, suggestions).
         """
         lines = critique_text.strip().split('\n')
-        
+
         score = 0.5  # Default
         critique = ""
         suggestions = ""
-        
+
         current_section = None
-        
+
         for line in lines:
             line_upper = line.upper().strip()
-            
+
             if line_upper.startswith('SCORE:'):
                 try:
                     score_str = line.split(':', 1)[1].strip()
@@ -201,7 +201,7 @@ SUGGESTIONS: [Specific improvements]""",
                 critique += " " + line.strip()
             elif current_section == 'suggestions':
                 suggestions += " " + line.strip()
-        
+
         return score, critique.strip(), suggestions.strip()
 
     def refine(
@@ -214,14 +214,14 @@ SUGGESTIONS: [Specific improvements]""",
     ) -> str:
         """
         Refine a response based on critique and suggestions.
-        
+
         Args:
             question: The original question.
             response: The original response.
             context: The context.
             critique: The critique of the response.
             suggestions: Suggestions for improvement.
-            
+
         Returns:
             The refined response.
         """
@@ -246,23 +246,23 @@ SUGGESTIONS: [Specific improvements]""",
     ) -> Dict:
         """
         Complete reflection loop: evaluate and refine if needed.
-        
+
         Args:
             question: The original question.
             response: The response to potentially improve.
             context: Optional context.
-            
+
         Returns:
             Dictionary with final response, reflection history, and improvements made.
         """
         history = []
         current_response = response
         improvements_made = 0
-        
+
         for iteration in range(self.max_refinements + 1):
             # Evaluate current response
             result = self.evaluate(question, current_response, context)
-            
+
             history.append({
                 "iteration": iteration,
                 "response_preview": current_response[:200] + "..." if len(current_response) > 200 else current_response,
@@ -270,20 +270,20 @@ SUGGESTIONS: [Specific improvements]""",
                 "acceptable": result.is_acceptable,
                 "critique": result.critique
             })
-            
+
             logger.info(f"Reflection iteration {iteration}: score={result.quality_score:.2f}")
-            
+
             # If acceptable or max iterations reached, stop
             if result.is_acceptable or iteration >= self.max_refinements:
                 break
-            
+
             # Refine the response
             current_response = self.refine(
                 question, current_response, context,
                 result.critique, result.suggestions
             )
             improvements_made += 1
-        
+
         return {
             "final_response": current_response,
             "original_response": response,
@@ -296,10 +296,10 @@ SUGGESTIONS: [Specific improvements]""",
 class CriticAgent:
     """
     Standalone critic agent for evaluating other agents' outputs.
-    
+
     Can be used independently of the ReflectiveAgent.
     """
-    
+
     def __init__(self, model: str = None):
         """Initialize the critic agent."""
         self.model_name = model or LLM_MODEL
@@ -314,7 +314,7 @@ class CriticAgent:
                 model=self.model_name,
                 google_api_key=GOOGLE_API_KEY
             )
-        
+
         self.prompt = PromptTemplate(
             template="""As a critic, evaluate this response objectively.
 
@@ -329,17 +329,17 @@ class CriticAgent:
             Your critique:""",
                         input_variables=["question", "response"]
                     )
-        
+
         self.chain = self.prompt | self.llm | StrOutputParser()
 
     def critique(self, question: str, response: str) -> str:
         """
         Provide a critique of a response.
-        
+
         Args:
             question: The original question.
             response: The response to critique.
-            
+
         Returns:
             A structured critique.
         """

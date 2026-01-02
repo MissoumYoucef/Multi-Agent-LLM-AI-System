@@ -44,11 +44,11 @@ Thought:{agent_scratchpad}"""
 class ReActAgent:
     """
     ReAct (Reason + Act) Agent.
-    
+
     Implements explicit reasoning before each action, following the
     Thought -> Action -> Observation loop pattern.
     """
-    
+
     def __init__(
         self,
         model: str = None,
@@ -58,7 +58,7 @@ class ReActAgent:
     ):
         """
         Initialize the ReAct agent.
-        
+
         Args:
             model: Optional model name override.
             tools: Optional list of tools. Defaults to standard tools.
@@ -68,7 +68,7 @@ class ReActAgent:
         self.model_name = model or LLM_MODEL
         self.max_iterations = max_iterations
         self.verbose = verbose
-        
+
         # Initialize LLM
         if USE_LOCAL:
             logger.info(f"Using local LLM for ReActAgent: {LOCAL_LLM_MODEL}")
@@ -83,20 +83,20 @@ class ReActAgent:
                 google_api_key=GOOGLE_API_KEY,
                 temperature=0.3  # Lower temperature for more focused reasoning
             )
-        
+
         # Set up tools (exclude search_documents as it needs retriever injection)
         self.tools = tools or [calculate, summarize, format_as_list, extract_keywords]
-        
+
         # Create the ReAct prompt
         self.prompt = PromptTemplate.from_template(REACT_PROMPT_TEMPLATE)
-        
+
         # Create the agent
         self.agent = create_react_agent(
             llm=self.llm,
             tools=self.tools,
             prompt=self.prompt
         )
-        
+
         # Create the executor
         self.executor = AgentExecutor(
             agent=self.agent,
@@ -106,16 +106,16 @@ class ReActAgent:
             handle_parsing_errors=True,
             return_intermediate_steps=True
         )
-        
+
         logger.info(f"ReActAgent initialized with {len(self.tools)} tools")
 
     def invoke(self, question: str) -> Dict[str, Any]:
         """
         Process a question using ReAct reasoning.
-        
+
         Args:
             question: The question to answer.
-            
+
         Returns:
             Dictionary with 'output', 'intermediate_steps', and 'reasoning'.
         """
@@ -126,22 +126,22 @@ class ReActAgent:
                 "intermediate_steps": [],
                 "reasoning": []
             }
-        
+
         try:
             # Run the agent
             result = self.executor.invoke({"input": question})
-            
+
             # Extract reasoning steps
             reasoning = self._extract_reasoning(result.get("intermediate_steps", []))
-            
+
             logger.info(f"ReAct completed with {len(reasoning)} reasoning steps")
-            
+
             return {
                 "output": result.get("output", ""),
                 "intermediate_steps": result.get("intermediate_steps", []),
                 "reasoning": reasoning
             }
-            
+
         except Exception as e:
             logger.error(f"ReAct agent error: {e}")
             return {
@@ -153,10 +153,10 @@ class ReActAgent:
     def _extract_reasoning(self, steps: List) -> List[Dict[str, str]]:
         """
         Extract readable reasoning from intermediate steps.
-        
+
         Args:
             steps: List of (AgentAction, observation) tuples.
-            
+
         Returns:
             List of reasoning step dictionaries.
         """
@@ -175,17 +175,17 @@ class ReActAgent:
     def get_reasoning_trace(self, result: Dict[str, Any]) -> str:
         """
         Format the reasoning trace as a readable string.
-        
+
         Args:
             result: Result from invoke().
-            
+
         Returns:
             Formatted reasoning trace.
         """
         reasoning = result.get("reasoning", [])
         if not reasoning:
             return "No intermediate reasoning steps."
-        
+
         trace_lines = ["=== Reasoning Trace ==="]
         for step in reasoning:
             trace_lines.append(f"\n--- Step {step['step']} ---")
@@ -193,7 +193,7 @@ class ReActAgent:
             trace_lines.append(f"Action: {step['action']}")
             trace_lines.append(f"Action Input: {step['action_input']}")
             trace_lines.append(f"Observation: {step['observation']}")
-        
+
         trace_lines.append("\n=== End Trace ===")
         return '\n'.join(trace_lines)
 
@@ -201,21 +201,21 @@ class ReActAgent:
 class SimpleReActAgent:
     """
     A simpler ReAct implementation without AgentExecutor.
-    
+
     Useful for more controlled reasoning without full agent framework.
     """
-    
+
     def __init__(self, model: str = None, max_steps: int = 3):
         """
         Initialize simple ReAct agent.
-        
+
         Args:
             model: Optional model name override.
             max_steps: Maximum reasoning steps.
         """
         self.model_name = model or LLM_MODEL
         self.max_steps = max_steps
-        
+
         if USE_LOCAL:
             logger.info(f"Using local LLM for SimpleReActAgent: {LOCAL_LLM_MODEL}")
             self.llm = ChatOllama(
@@ -227,7 +227,7 @@ class SimpleReActAgent:
                 model=self.model_name,
                 google_api_key=GOOGLE_API_KEY
             )
-        
+
         self.prompt = PromptTemplate(
             template="""You are a reasoning assistant. Think step by step.
 
@@ -244,24 +244,24 @@ class SimpleReActAgent:
                 Your reasoning:""",
                 input_variables=["question", "context"]
             )
-        
+
         self.chain = self.prompt | self.llm | StrOutputParser()
         logger.info(f"SimpleReActAgent initialized")
 
     def invoke(self, question: str, context: str = "") -> str:
         """
         Process a question with explicit reasoning steps.
-        
+
         Args:
             question: The question to answer.
             context: Optional context information.
-            
+
         Returns:
             The reasoned response.
         """
         if not question or not question.strip():
             return "Please provide a valid question."
-        
+
         try:
             response = self.chain.invoke({
                 "question": question,

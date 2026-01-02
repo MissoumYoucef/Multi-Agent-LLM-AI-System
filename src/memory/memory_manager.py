@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 class MemoryManager:
     """
     Unified memory manager for conversation handling.
-    
+
     Combines:
     - Short-term memory (recent messages buffer)
     - Long-term memory (summarized history)
     - Persistent storage (session save/load)
     """
-    
+
     def __init__(
         self,
         buffer_size: int = 10,
@@ -37,7 +37,7 @@ class MemoryManager:
     ):
         """
         Initialize memory manager.
-        
+
         Args:
             buffer_size: Max messages in active buffer.
             summary_threshold: Trigger summarization at this count.
@@ -50,23 +50,23 @@ class MemoryManager:
             summary_threshold=summary_threshold,
             ttl_seconds=session_ttl
         )
-        
+
         self.enable_summarization = enable_summarization
         self.enable_persistence = enable_persistence
-        
+
         if enable_summarization:
             self.summary_memory = ConversationSummaryMemory()
         else:
             self.summary_memory = None
-        
+
         if enable_persistence:
             self.store = MessageStore(default_ttl=session_ttl * 24)  # 24x TTL for storage
         else:
             self.store = None
-        
+
         logger.info(f"MemoryManager initialized: buffer={buffer_size}, "
                    f"summarization={enable_summarization}, persistence={enable_persistence}")
-    
+
     def add_user_message(
         self,
         content: str,
@@ -82,7 +82,7 @@ class MemoryManager:
         )
         self._check_summarization(session_id)
         return message
-    
+
     def add_assistant_message(
         self,
         content: str,
@@ -98,7 +98,7 @@ class MemoryManager:
         )
         self._check_summarization(session_id)
         return message
-    
+
     def get_context(
         self,
         session_id: str = "default",
@@ -107,12 +107,12 @@ class MemoryManager:
     ) -> str:
         """
         Get formatted conversation context for LLM prompts.
-        
+
         Args:
             session_id: Session identifier.
             max_messages: Maximum recent messages to include.
             include_summary: Whether to include historical summary.
-            
+
         Returns:
             Formatted context string.
         """
@@ -120,7 +120,7 @@ class MemoryManager:
             session_id=session_id,
             limit=max_messages
         )
-    
+
     def get_messages(
         self,
         session_id: str = "default",
@@ -132,29 +132,29 @@ class MemoryManager:
             limit=limit,
             include_summary=False
         )
-    
+
     def get_summary(self, session_id: str = "default") -> str:
         """Get the conversation summary."""
         return self.buffer.get_summary(session_id)
-    
+
     def clear_session(self, session_id: str = "default") -> None:
         """Clear a session's memory."""
         self.buffer.clear_session(session_id)
         if self.store:
             self.store.delete_session(session_id)
         logger.info(f"Cleared memory for session: {session_id}")
-    
+
     def save_session(self, session_id: str = "default") -> bool:
         """
         Save session to persistent storage.
-        
+
         Returns:
             True if saved successfully, False otherwise.
         """
         if not self.store:
             logger.warning("Persistence not enabled")
             return False
-        
+
         try:
             messages = self.buffer.get_history(session_id, include_summary=False)
             summary = self.buffer.get_summary(session_id)
@@ -163,23 +163,23 @@ class MemoryManager:
         except Exception as e:
             logger.error(f"Failed to save session {session_id}: {e}")
             return False
-    
+
     def load_session(self, session_id: str = "default") -> bool:
         """
         Load session from persistent storage.
-        
+
         Returns:
             True if loaded successfully, False otherwise.
         """
         if not self.store:
             logger.warning("Persistence not enabled")
             return False
-        
+
         try:
             data = self.store.load_session(session_id)
             if not data:
                 return False
-            
+
             # Restore messages to buffer
             for msg in data["messages"]:
                 self.buffer.add_message(
@@ -188,18 +188,18 @@ class MemoryManager:
                     session_id=session_id,
                     metadata=msg.metadata
                 )
-            
+
             # Restore summary
             if data.get("summary"):
                 self.buffer.set_summary(data["summary"], session_id)
-            
+
             logger.info(f"Loaded session {session_id}")
             return True
-            
+
         except Exception as e:
             logger.error(f"Failed to load session {session_id}: {e}")
             return False
-    
+
     def get_session_stats(self, session_id: str = "default") -> Dict[str, Any]:
         """Get statistics about a session."""
         return {
@@ -207,34 +207,34 @@ class MemoryManager:
             "has_summary": bool(self.buffer.get_summary(session_id)),
             "needs_summarization": self.buffer.needs_summarization(session_id)
         }
-    
+
     def list_sessions(self) -> List[str]:
         """List all active sessions."""
         return self.buffer.get_all_session_ids()
-    
+
     def _check_summarization(self, session_id: str) -> None:
         """Check and trigger summarization if needed."""
         if not self.enable_summarization or not self.summary_memory:
             return
-        
+
         if self.summary_memory.should_summarize(self.buffer, session_id):
             try:
                 messages = self.buffer.get_history(session_id, include_summary=False)
                 # Summarize older messages (all but last few)
                 to_summarize = messages[:-5] if len(messages) > 5 else messages
-                
+
                 if to_summarize:
                     new_summary = self.summary_memory.summarize(to_summarize)
                     existing = self.buffer.get_summary(session_id)
-                    
+
                     if existing:
                         combined = f"{existing}\n\nLater: {new_summary}"
                     else:
                         combined = new_summary
-                    
+
                     self.buffer.set_summary(combined, session_id)
                     logger.info(f"Updated summary for session {session_id}")
-                    
+
             except Exception as e:
                 logger.error(f"Summarization failed for {session_id}: {e}")
 
@@ -242,20 +242,20 @@ class MemoryManager:
 class MemoryContext:
     """
     Context manager for memory operations.
-    
+
     Automatically saves session on exit.
     """
-    
+
     def __init__(self, manager: MemoryManager, session_id: str = "default"):
         """Initialize memory context."""
         self.manager = manager
         self.session_id = session_id
-    
+
     def __enter__(self) -> MemoryManager:
         """Enter context and optionally load session."""
         self.manager.load_session(self.session_id)
         return self.manager
-    
+
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
         """Exit context and save session."""
         self.manager.save_session(self.session_id)
@@ -269,12 +269,12 @@ def create_memory_manager(
 ) -> MemoryManager:
     """
     Create a memory manager with sensible defaults.
-    
+
     Args:
         buffer_size: Messages to keep in buffer.
         enable_summarization: Enable LLM-based summarization.
         enable_persistence: Enable session persistence.
-        
+
     Returns:
         Configured MemoryManager instance.
     """

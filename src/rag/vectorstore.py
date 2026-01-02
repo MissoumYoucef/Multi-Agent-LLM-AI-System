@@ -7,7 +7,7 @@ from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
 from ..utils.config import (
-    GOOGLE_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP, EMBEDDING_MODEL, 
+    GOOGLE_API_KEY, CHUNK_SIZE, CHUNK_OVERLAP, EMBEDDING_MODEL,
     VECTOR_STORE_PATH, USE_LOCAL, LOCAL_EMBEDDING_MODEL
 )
 from .freshness_tracker import FreshnessTracker
@@ -17,20 +17,20 @@ logger = logging.getLogger(__name__)
 class VectorStoreManager:
     """
     Manages the vector store for RAG.
-    
+
     Handles embedding initialization, document splitting, and vector store creation.
     Integrates with FreshnessTracker to track document updates.
     """
-    
+
     def __init__(self, freshness_tracker: Optional[FreshnessTracker] = None):
         """
         Initialize the vector store manager.
-        
+
         Args:
             freshness_tracker: Optional tracker for document freshness.
         """
         self.freshness_tracker = freshness_tracker
-        
+
         if USE_LOCAL:
             logger.info(f"Using local embeddings: {LOCAL_EMBEDDING_MODEL}")
             self.embeddings = HuggingFaceEmbeddings(
@@ -39,7 +39,7 @@ class VectorStoreManager:
         else:
             if not GOOGLE_API_KEY:
                 raise ValueError("GOOGLE_API_KEY is not set and USE_LOCAL is false")
-            
+
             self.embeddings = GoogleGenerativeAIEmbeddings(
                 model=EMBEDDING_MODEL,
                 google_api_key=GOOGLE_API_KEY
@@ -49,10 +49,10 @@ class VectorStoreManager:
     def create_vector_store(self, documents: List[Document]):
         """
         Create a vector store from documents.
-        
+
         Args:
             documents: List of documents to index.
-            
+
         Returns:
             Tuple of (vectorstore, splits).
         """
@@ -83,24 +83,24 @@ class VectorStoreManager:
             persist_directory=self.vector_store_path
         )
         logger.info(f"Vector store updated at {self.vector_store_path}")
-        
+
         # Update indexed time for tracked documents
         if self.freshness_tracker:
             for source in processed_sources:
                 self.freshness_tracker.update_indexed_time(source)
-                
+
         return vectorstore, splits
 
     def load_vector_store(self):
         """
         Load an existing vector store.
-        
+
         Returns:
             VectorStore if exists, None otherwise.
         """
         if not os.path.exists(self.vector_store_path):
             return None
-            
+
         vectorstore = Chroma(
             persist_directory=self.vector_store_path,
             embedding_function=self.embeddings

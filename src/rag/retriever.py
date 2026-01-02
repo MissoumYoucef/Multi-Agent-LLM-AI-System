@@ -17,13 +17,13 @@ logger = logging.getLogger(__name__)
 class HybridRetriever:
     """
     A hybrid retriever that combines BM25 keyword search with vector similarity search.
-    
+
     Uses an ensemble approach with configurable weights.
     """
-    
+
     def __init__(
-        self, 
-        vectorstore: VectorStore, 
+        self,
+        vectorstore: VectorStore,
         documents: List[Document],
         k: int = None,
         bm25_weight: float = None,
@@ -31,7 +31,7 @@ class HybridRetriever:
     ):
         """
         Initialize the hybrid retriever.
-        
+
         Args:
             vectorstore: The vector store for semantic search.
             documents: Documents for BM25 indexing.
@@ -49,7 +49,7 @@ class HybridRetriever:
     def _initialize_retriever(self) -> EnsembleRetriever:
         """
         Initialize the ensemble retriever with BM25 and vector search.
-        
+
         Returns:
             An EnsembleRetriever combining both search methods.
         """
@@ -71,23 +71,23 @@ class HybridRetriever:
         )
         logger.info(f"Ensemble retriever initialized with weights: "
                    f"BM25={self.bm25_weight}, Vector={self.vector_weight}")
-        
+
         return ensemble_retriever
 
     def retrieve(self, query: str) -> List[Document]:
         """
         Retrieve relevant documents for a query.
-        
+
         Args:
             query: The search query.
-            
+
         Returns:
             A list of relevant documents.
         """
         if not query or not query.strip():
             logger.warning("Empty query received")
             return []
-        
+
         logger.debug(f"Retrieving for query: {query[:50]}...")
         docs = self.retriever.invoke(query)
         logger.info(f"Retrieved {len(docs)} documents for query")

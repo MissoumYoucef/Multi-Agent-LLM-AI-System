@@ -13,13 +13,13 @@ load_dotenv()
 def get_required_env(name: str) -> str:
     """
     Get a required environment variable or raise ValueError.
-    
+
     Args:
         name: Name of the environment variable.
-        
+
     Returns:
         The value of the environment variable.
-        
+
     Raises:
         ValueError: If the environment variable is not set.
     """
@@ -33,11 +33,11 @@ def get_required_env(name: str) -> str:
 def get_optional_env(name: str, default: str) -> str:
     """
     Get an optional environment variable with a default value.
-    
+
     Args:
         name: Name of the environment variable.
         default: Default value if not set.
-        
+
     Returns:
         The value of the environment variable or the default.
     """

@@ -39,7 +39,7 @@ class RequestBatcher:
     Collects requests within a time window or until batch size
     is reached, then processes them together.
     """
-    
+
     def __init__(
         self,
         batch_size: int = 10,
@@ -48,7 +48,7 @@ class RequestBatcher:
     ):
         """
         Initialize request batcher.
-        
+
         Args:
             batch_size: Maximum requests per batch.
             batch_timeout_ms: Max wait time before processing batch.
@@ -57,28 +57,28 @@ class RequestBatcher:
         self.batch_size = batch_size
         self.batch_timeout = batch_timeout_ms / 1000  # Convert to seconds
         self.max_queue_size = max_queue_size
-        
+
         self._queue: deque[BatchRequest] = deque(maxlen=max_queue_size)
         self._processor: Optional[Callable] = None
         self._running = False
         self._batch_count = 0
         self._total_requests = 0
         self._lock = asyncio.Lock()
-        
+
         logger.info(f"RequestBatcher initialized: size={batch_size}, timeout={batch_timeout_ms}ms")
-    
+
     def set_processor(
         self,
         processor: Callable[[List[Dict[str, Any]]], Awaitable[List[Any]]]
     ) -> None:
         """
         Set the batch processor function.
-        
+
         Args:
             processor: Async function that processes a batch of requests.
         """
         self._processor = processor
-    
+
     async def add_request(
         self,
         request_id: str,
@@ -87,48 +87,48 @@ class RequestBatcher:
     ) -> asyncio.Future:
         """
         Add a request to the batch queue.
-        
+
         Args:
             request_id: Unique request identifier.
             data: Request data.
             priority: Priority (higher = processed first).
-            
+
         Returns:
             Future that will contain the result.
         """
         loop = asyncio.get_event_loop()
         future = loop.create_future()
-        
+
         request = BatchRequest(
             id=request_id,
             data=data,
             future=future,
             priority=priority
         )
-        
+
         async with self._lock:
             if len(self._queue) >= self.max_queue_size:
                 future.set_exception(Exception("Queue full"))
                 return future
-            
+
             self._queue.append(request)
             self._total_requests += 1
-            
+
             # Check if we should process immediately
             if len(self._queue) >= self.batch_size:
                 asyncio.create_task(self._process_batch())
-        
+
         return future
-    
+
     async def start(self) -> None:
         """Start the background batch processing loop."""
         if self._running:
             return
-        
+
         self._running = True
         asyncio.create_task(self._processing_loop())
         logger.info("Batch processor started")
-    
+
     async def stop(self) -> None:
         """Stop the batch processing loop."""
         self._running = False
@@ -136,51 +136,51 @@ class RequestBatcher:
         while self._queue:
             await self._process_batch()
         logger.info("Batch processor stopped")
-    
+
     async def _processing_loop(self) -> None:
         """Background loop that processes batches on timeout."""
         while self._running:
             await asyncio.sleep(self.batch_timeout)
             if self._queue:
                 await self._process_batch()
-    
+
     async def _process_batch(self) -> Optional[BatchResult]:
         """Process current batch of requests."""
         if not self._processor:
             logger.error("No processor set")
             return None
-        
+
         async with self._lock:
             if not self._queue:
                 return None
-            
+
             # Get batch of requests (respecting priority)
             batch_requests = []
             for _ in range(min(self.batch_size, len(self._queue))):
                 if self._queue:
                     batch_requests.append(self._queue.popleft())
-            
+
             # Sort by priority
             batch_requests.sort(key=lambda r: -r.priority)
-        
+
         if not batch_requests:
             return None
-        
+
         self._batch_count += 1
         batch_id = f"batch_{self._batch_count}"
         start_time = time.time()
-        
+
         try:
             # Extract data for processing
             batch_data = [r.data for r in batch_requests]
-            
+
             # Process batch
             results = await self._processor(batch_data)
-            
+
             # Set results on futures
             success_count = 0
             error_count = 0
-            
+
             for i, request in enumerate(batch_requests):
                 try:
                     if i < len(results):
@@ -195,9 +195,9 @@ class RequestBatcher:
                     if not request.future.done():
                         request.future.set_exception(e)
                     error_count += 1
-            
+
             processing_time = time.time() - start_time
-            
+
             result = BatchResult(
                 batch_id=batch_id,
                 results=results,
@@ -206,13 +206,13 @@ class RequestBatcher:
                 success_count=success_count,
                 error_count=error_count
             )
-            
+
             logger.debug(f"Batch {batch_id} processed: "
                         f"{success_count} success, {error_count} errors, "
                         f"{processing_time:.3f}s")
-            
+
             return result
-            
+
         except Exception as e:
             logger.error(f"Batch processing error: {e}")
             # Set error on all pending futures
@@ -220,7 +220,7 @@ class RequestBatcher:
                 if not request.future.done():
                     request.future.set_exception(e)
             return None
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get batcher statistics."""
         return {
@@ -236,10 +236,10 @@ class RequestBatcher:
 class AdaptiveBatcher(RequestBatcher):
     """
     Request batcher with adaptive batch sizing.
-    
+
     Adjusts batch size based on latency and throughput metrics.
     """
-    
+
     def __init__(
         self,
         min_batch_size: int = 1,
@@ -249,7 +249,7 @@ class AdaptiveBatcher(RequestBatcher):
     ):
         """
         Initialize adaptive batcher.
-        
+
         Args:
             min_batch_size: Minimum batch size.
             max_batch_size: Maximum batch size.
@@ -260,26 +260,26 @@ class AdaptiveBatcher(RequestBatcher):
         self.min_batch_size = min_batch_size
         self.max_batch_size = max_batch_size
         self.target_latency = target_latency_ms / 1000
-        
+
         self._latency_history: deque = deque(maxlen=100)
-    
+
     async def _process_batch(self) -> Optional[BatchResult]:
         """Process batch and adapt size based on latency."""
         result = await super()._process_batch()
-        
+
         if result:
             self._latency_history.append(result.processing_time)
             self._adapt_batch_size()
-        
+
         return result
-    
+
     def _adapt_batch_size(self) -> None:
         """Adjust batch size based on recent latency."""
         if len(self._latency_history) < 10:
             return
-        
+
         avg_latency = sum(self._latency_history) / len(self._latency_history)
-        
+
         if avg_latency > self.target_latency * 1.2:
             # Latency too high, reduce batch size
             self.batch_size = max(

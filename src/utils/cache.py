@@ -17,12 +17,12 @@ try:
     from prometheus_client import Counter
     CACHE_HITS = Counter("cache_hits_total", "Total number of cache hits", ["type"])
     CACHE_MISSES = Counter("cache_misses_total", "Total number of cache misses", ["type"])
-    
+
     # Initialize labels to ensure they show up in Prometheus
     for t in ["local", "redis", "semantic", "total"]:
         CACHE_HITS.labels(type=t)
         CACHE_MISSES.labels(type=t)
-        
+
     METRICS_AVAILABLE = True
 except ImportError:
     METRICS_AVAILABLE = False
@@ -40,12 +40,12 @@ class CacheEntry:
     ttl: int = 3600
     hit_count: int = 0
     metadata: Dict[str, Any] = field(default_factory=dict)
-    
+
     @property
     def is_expired(self) -> bool:
         """Check if entry is expired."""
         return time.time() - self.created_at > self.ttl
-        
+
     def touch(self) -> None:
         """Update hit count."""
         self.hit_count += 1
@@ -54,14 +54,14 @@ class CacheEntry:
 class LRUCache:
     """
     In-memory LRU (Least Recently Used) cache.
-    
+
     Evicts least recently used entries when capacity is reached.
     """
-    
+
     def __init__(self, max_size: int = 1000):
         """
         Initialize LRU cache.
-        
+
         Args:
             max_size: Maximum number of entries.
         """
@@ -69,35 +69,35 @@ class LRUCache:
         self._cache: OrderedDict[str, CacheEntry] = OrderedDict()
         self._hits = 0
         self._misses = 0
-    
+
     def get(self, key: str) -> Optional[CacheEntry]:
         """
         Get an entry from cache.
-        
+
         Args:
             key: Cache key.
-            
+
         Returns:
             CacheEntry if found and not expired, None otherwise.
         """
         if key not in self._cache:
             self._misses += 1
             return None
-        
+
         entry = self._cache[key]
-        
+
         if entry.is_expired:
             del self._cache[key]
             self._misses += 1
             return None
-        
+
         # Move to end (most recently used)
         self._cache.move_to_end(key)
         entry.touch()
         self._hits += 1
-        
+
         return entry
-    
+
     def set(
         self,
         key: str,
@@ -108,7 +108,7 @@ class LRUCache:
     ) -> None:
         """
         Set an entry in cache.
-        
+
         Args:
             key: Cache key.
             value: Value to cache.
@@ -119,11 +119,11 @@ class LRUCache:
         # Remove if exists to update position
         if key in self._cache:
             del self._cache[key]
-        
+
         # Evict oldest if at capacity
         while len(self._cache) >= self.max_size:
             self._cache.popitem(last=False)
-        
+
         self._cache[key] = CacheEntry(
             key=key,
             value=value,
@@ -131,18 +131,18 @@ class LRUCache:
             ttl=ttl,
             metadata=metadata or {}
         )
-    
+
     def delete(self, key: str) -> bool:
         """Delete an entry from cache."""
         if key in self._cache:
             del self._cache[key]
             return True
         return False
-    
+
     def clear(self) -> None:
         """Clear all entries."""
         self._cache.clear()
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         total = self._hits + self._misses
@@ -158,10 +158,10 @@ class LRUCache:
 class ResponseCache:
     """
     High-level response cache with semantic matching.
-    
+
     Supports exact match caching with optional semantic similarity.
     """
-    
+
     def __init__(
         self,
         max_size: int = 1000,
@@ -172,7 +172,7 @@ class ResponseCache:
     ):
         """
         Initialize response cache.
-        
+
         Args:
             max_size: Maximum cache entries.
             default_ttl: Default TTL in seconds.
@@ -183,16 +183,16 @@ class ResponseCache:
         self.default_ttl = default_ttl
         self.enable_semantic = enable_semantic
         self.similarity_threshold = similarity_threshold
-        
+
         self._local_cache = LRUCache(max_size)
         self._redis_client = None
-        
+
         if redis_url:
             self._init_redis(redis_url)
-        
+
         logger.info(f"ResponseCache initialized: max_size={max_size}, "
                    f"semantic={enable_semantic}")
-    
+
     def _init_redis(self, redis_url: str) -> None:
         """Initialize Redis connection."""
         try:
@@ -204,12 +204,12 @@ class ResponseCache:
             logger.warning("Redis package not installed, using local cache only")
         except Exception as e:
             logger.warning(f"Redis connection failed: {e}, using local cache only")
-    
+
     def _generate_key(self, query: str) -> str:
         """Generate cache key from query."""
         normalized = query.strip().lower()
         return hashlib.sha256(normalized.encode()).hexdigest()[:32]
-    
+
     def get(
         self,
         query: str,
@@ -217,16 +217,16 @@ class ResponseCache:
     ) -> Optional[str]:
         """
         Get cached response for a query.
-        
+
         Args:
             query: The query to look up.
             threshold: Optional similarity threshold override.
-            
+
         Returns:
             Cached response if found, None otherwise.
         """
         key = self._generate_key(query)
-        
+
         # Try exact match in local cache
         entry = self._local_cache.get(key)
         if entry:
@@ -234,7 +234,7 @@ class ResponseCache:
             if METRICS_AVAILABLE:
                 CACHE_HITS.labels(type="local").inc()
             return entry.value
-        
+
         # Try Redis if available
         if self._redis_client:
             try:
@@ -248,7 +248,7 @@ class ResponseCache:
                     CACHE_MISSES.labels(type="redis").inc()
             except Exception as e:
                 logger.warning(f"Redis get failed: {e}")
-        
+
         # Semantic matching (if enabled and embeddings available)
         if self.enable_semantic:
             match = self._find_semantic_match(query, threshold)
@@ -259,14 +259,14 @@ class ResponseCache:
                 return match
             elif METRICS_AVAILABLE:
                 CACHE_MISSES.labels(type="semantic").inc()
-        
+
         # Record final miss
         if METRICS_AVAILABLE:
             CACHE_MISSES.labels(type="local").inc()
             CACHE_MISSES.labels(type="total").inc()
-            
+
         return None
-    
+
     def set(
         self,
         query: str,
@@ -276,7 +276,7 @@ class ResponseCache:
     ) -> None:
         """
         Cache a response.
-        
+
         Args:
             query: The original query.
             response: The response to cache.
@@ -285,10 +285,10 @@ class ResponseCache:
         """
         key = self._generate_key(query)
         ttl = ttl or self.default_ttl
-        
+
         # Store in local cache
         self._local_cache.set(key, response, query, ttl, metadata)
-        
+
         # Store in Redis if available
         if self._redis_client:
             try:
@@ -299,21 +299,21 @@ class ResponseCache:
                 )
             except Exception as e:
                 logger.warning(f"Redis set failed: {e}")
-        
+
         logger.debug(f"Cached response: {key[:8]}...")
-    
+
     def invalidate(self, pattern: Optional[str] = None) -> int:
         """
         Invalidate cache entries.
-        
+
         Args:
             pattern: Optional pattern to match (invalidate all if None).
-            
+
         Returns:
             Number of entries invalidated.
         """
         count = 0
-        
+
         if pattern is None:
             count = len(self._local_cache._cache)
             self._local_cache.clear()
@@ -326,10 +326,10 @@ class ResponseCache:
             for key in keys_to_delete:
                 self._local_cache.delete(key)
                 count += 1
-        
+
         logger.info(f"Invalidated {count} cache entries")
         return count
-    
+
     def _find_semantic_match(
         self,
         query: str,
@@ -337,7 +337,7 @@ class ResponseCache:
     ) -> Optional[str]:
         """
         Find semantically similar cached query.
-        
+
         Note: This is a placeholder. Production implementation
         would use embedding-based similarity.
         """
@@ -345,13 +345,13 @@ class ResponseCache:
         # Full implementation would compute embeddings and cosine similarity
         threshold = threshold or self.similarity_threshold
         normalized_query = query.strip().lower()
-        
+
         for entry in self._local_cache._cache.values():
             if entry.query.strip().lower() == normalized_query:
                 return entry.value
-        
+
         return None
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get cache statistics."""
         stats = self._local_cache.get_stats()
@@ -367,16 +367,16 @@ def cached(
 ) -> callable:
     """
     Decorator to cache function results.
-    
+
     Args:
         ttl: Time-to-live in seconds.
         key_prefix: Prefix for cache keys.
-        
+
     Returns:
         Decorated function.
     """
     cache = ResponseCache(max_size=100, default_ttl=ttl)
-    
+
     def decorator(func: callable) -> callable:
         def wrapper(*args, **kwargs):
             # Generate key from function name and arguments
@@ -384,15 +384,15 @@ def cached(
             key_parts.extend(str(a) for a in args)
             key_parts.extend(f"{k}={v}" for k, v in sorted(kwargs.items()))
             key = ":".join(key_parts)
-            
+
             result = cache.get(key)
             if result:
                 return result
-            
+
             result = func(*args, **kwargs)
             cache.set(key, str(result), ttl)
             return result
-        
+
         return wrapper
     return decorator
 

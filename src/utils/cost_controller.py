@@ -46,10 +46,10 @@ class BudgetConfig:
 class CostController:
     """
     Controls and monitors LLM API costs.
-    
+
     Tracks usage, enforces budgets, and provides cost analytics.
     """
-    
+
     def __init__(
         self,
         daily_budget: float = 10.0,
@@ -58,7 +58,7 @@ class CostController:
     ):
         """
         Initialize cost controller.
-        
+
         Args:
             daily_budget: Daily budget in USD.
             alert_threshold: Alert when usage reaches this fraction of budget.
@@ -72,13 +72,13 @@ class CostController:
                 hard_limit=enable_hard_limit
             )
         }
-        
+
         self._usage_log: List[UsageRecord] = []
         self._alerts_sent: Dict[str, float] = {}  # Alert key -> timestamp
         self._alert_cooldown = 3600  # 1 hour between same alerts
-        
+
         logger.info(f"CostController initialized: daily_budget=${daily_budget}")
-    
+
     def add_budget(
         self,
         period: BudgetPeriod,
@@ -93,7 +93,7 @@ class CostController:
             alert_threshold=alert_threshold,
             hard_limit=hard_limit
         )
-    
+
     def record_usage(
         self,
         model: str,
@@ -105,7 +105,7 @@ class CostController:
     ) -> None:
         """
         Record an API usage.
-        
+
         Args:
             model: Model name used.
             input_tokens: Number of input tokens.
@@ -123,19 +123,19 @@ class CostController:
             success=success
         )
         self._usage_log.append(record)
-        
+
         # Check budgets and trigger alerts
         self._check_budgets()
-        
+
         logger.debug(f"Recorded usage: {model}, ${cost:.4f}")
-    
+
     def check_budget(self, estimated_cost: float = 0) -> tuple[bool, str]:
         """
         Check if a request can proceed within budget.
-        
+
         Args:
             estimated_cost: Estimated cost of upcoming request.
-            
+
         Returns:
             Tuple of (can_proceed, message).
         """
@@ -146,16 +146,16 @@ class CostController:
                     msg = f"Budget exceeded for {period.value}: ${current:.2f}/${config.limit:.2f}"
                     logger.warning(msg)
                     return False, msg
-        
+
         return True, "Within budget"
-    
+
     def get_usage(self, period: BudgetPeriod = BudgetPeriod.DAILY) -> float:
         """
         Get total usage for a period.
-        
+
         Args:
             period: The budget period.
-            
+
         Returns:
             Total cost in USD.
         """
@@ -164,7 +164,7 @@ class CostController:
             r.cost for r in self._usage_log
             if r.timestamp >= cutoff
         )
-    
+
     def get_usage_by_model(
         self,
         period: BudgetPeriod = BudgetPeriod.DAILY
@@ -172,13 +172,13 @@ class CostController:
         """Get usage breakdown by model."""
         cutoff = self._get_period_cutoff(period)
         usage: Dict[str, float] = {}
-        
+
         for record in self._usage_log:
             if record.timestamp >= cutoff:
                 usage[record.model] = usage.get(record.model, 0) + record.cost
-        
+
         return usage
-    
+
     def get_budget_status(
         self,
         period: BudgetPeriod = BudgetPeriod.DAILY
@@ -187,11 +187,11 @@ class CostController:
         config = self.budgets.get(period)
         if not config:
             return {"error": f"No budget configured for {period.value}"}
-        
+
         current = self.get_usage(period)
         remaining = max(0, config.limit - current)
         percentage = (current / config.limit) * 100 if config.limit > 0 else 0
-        
+
         return {
             "period": period.value,
             "limit": config.limit,
@@ -201,7 +201,7 @@ class CostController:
             "alert_threshold_reached": percentage >= config.alert_threshold * 100,
             "limit_reached": current >= config.limit
         }
-    
+
     def get_analytics(
         self,
         period: BudgetPeriod = BudgetPeriod.DAILY
@@ -209,7 +209,7 @@ class CostController:
         """Get detailed analytics for a period."""
         cutoff = self._get_period_cutoff(period)
         records = [r for r in self._usage_log if r.timestamp >= cutoff]
-        
+
         if not records:
             return {
                 "period": period.value,
@@ -221,11 +221,11 @@ class CostController:
                 "by_model": {},
                 "by_session": {}
             }
-        
+
         total_cost = sum(r.cost for r in records)
         total_input = sum(r.input_tokens for r in records)
         total_output = sum(r.output_tokens for r in records)
-        
+
         by_model: Dict[str, Any] = {}
         for r in records:
             if r.model not in by_model:
@@ -233,11 +233,11 @@ class CostController:
             by_model[r.model]["requests"] += 1
             by_model[r.model]["cost"] += r.cost
             by_model[r.model]["tokens"] += r.input_tokens + r.output_tokens
-        
+
         by_session: Dict[str, float] = {}
         for r in records:
             by_session[r.session_id] = by_session.get(r.session_id, 0) + r.cost
-        
+
         return {
             "period": period.value,
             "total_requests": len(records),
@@ -249,11 +249,11 @@ class CostController:
             "by_model": by_model,
             "by_session": by_session
         }
-    
+
     def _get_period_cutoff(self, period: BudgetPeriod) -> float:
         """Get timestamp cutoff for a period."""
         now = datetime.now()
-        
+
         if period == BudgetPeriod.HOURLY:
             cutoff = now.replace(minute=0, second=0, microsecond=0)
         elif period == BudgetPeriod.DAILY:
@@ -263,15 +263,15 @@ class CostController:
             cutoff = cutoff.replace(hour=0, minute=0, second=0, microsecond=0)
         else:  # MONTHLY
             cutoff = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
-        
+
         return cutoff.timestamp()
-    
+
     def _check_budgets(self) -> None:
         """Check budgets and trigger alerts if needed."""
         for period, config in self.budgets.items():
             current = self.get_usage(period)
             percentage = current / config.limit if config.limit > 0 else 0
-            
+
             if percentage >= config.alert_threshold:
                 alert_key = f"{period.value}_threshold"
                 self._send_alert(
@@ -279,17 +279,17 @@ class CostController:
                     f"Budget alert: {period.value} usage at {percentage*100:.1f}% "
                     f"(${current:.2f}/${config.limit:.2f})"
                 )
-    
+
     def _send_alert(self, key: str, message: str) -> None:
         """Send an alert if not in cooldown."""
         now = time.time()
         last_sent = self._alerts_sent.get(key, 0)
-        
+
         if now - last_sent >= self._alert_cooldown:
             self._alerts_sent[key] = now
             logger.warning(f"COST ALERT: {message}")
             # In production, this would send to monitoring system
-    
+
     def cleanup_old_records(self, days: int = 30) -> int:
         """Remove records older than specified days."""
         cutoff = time.time() - (days * 86400)

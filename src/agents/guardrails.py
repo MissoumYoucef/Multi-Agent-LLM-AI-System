@@ -42,10 +42,10 @@ class GuardrailResult:
 class InputGuardrail:
     """
     Input validation guardrail.
-    
+
     Validates user inputs for safety and quality.
     """
-    
+
     # Patterns that might indicate prompt injection attempts
     INJECTION_PATTERNS = [
         r"ignore\s+(previous|all)\s+instructions",
@@ -58,13 +58,13 @@ class InputGuardrail:
         r"\[INST\]",  # Common instruction markers
         r"<<SYS>>",
     ]
-    
+
     # Forbidden content patterns
     FORBIDDEN_PATTERNS = [
         r"(?:create|make|generate)\s+(?:a\s+)?(?:bomb|weapon|explosive)",
         r"(?:how\s+to\s+)?(?:hack|break\s+into)",
     ]
-    
+
     def __init__(
         self,
         max_length: int = 10000,
@@ -74,7 +74,7 @@ class InputGuardrail:
     ):
         """
         Initialize the input guardrail.
-        
+
         Args:
             max_length: Maximum allowed input length.
             min_length: Minimum required input length.
@@ -85,7 +85,7 @@ class InputGuardrail:
         self.min_length = min_length
         self.check_injection = check_injection
         self.check_forbidden = check_forbidden
-        
+
         # Compile patterns for efficiency
         self._injection_patterns = [
             re.compile(p, re.IGNORECASE) for p in self.INJECTION_PATTERNS
@@ -97,24 +97,24 @@ class InputGuardrail:
     def validate(self, text: str) -> GuardrailResult:
         """
         Validate input text.
-        
+
         Args:
             text: The input text to validate.
-            
+
         Returns:
             GuardrailResult with validation status and details.
         """
         violations = []
         sanitized = text.strip()
-        
+
         # Length checks
         if len(sanitized) < self.min_length:
             violations.append(f"Input too short (min: {self.min_length})")
-        
+
         if len(sanitized) > self.max_length:
             violations.append(f"Input too long (max: {self.max_length})")
             sanitized = sanitized[:self.max_length]
-        
+
         # Injection detection
         if self.check_injection:
             for pattern in self._injection_patterns:
@@ -122,7 +122,7 @@ class InputGuardrail:
                     violations.append(f"Potential prompt injection detected")
                     logger.warning(f"Injection pattern detected: {pattern.pattern}")
                     break
-        
+
         # Forbidden content
         if self.check_forbidden:
             for pattern in self._forbidden_patterns:
@@ -130,7 +130,7 @@ class InputGuardrail:
                     violations.append("Forbidden content detected")
                     logger.warning(f"Forbidden pattern detected: {pattern.pattern}")
                     break
-        
+
         # Determine status
         if violations:
             # Critical violations cause failure
@@ -143,7 +143,7 @@ class InputGuardrail:
         else:
             status = GuardrailStatus.PASS
             message = "Input validated successfully"
-        
+
         return GuardrailResult(
             status=status,
             message=message,
@@ -156,10 +156,10 @@ class InputGuardrail:
 class OutputGuardrail:
     """
     Output validation guardrail.
-    
+
     Validates LLM outputs for safety and quality.
     """
-    
+
     # Patterns indicating potential hallucination markers
     UNCERTAINTY_PHRASES = [
         "i'm not sure",
@@ -170,13 +170,13 @@ class OutputGuardrail:
         "i'm an ai",
         "i am an ai",
     ]
-    
+
     # Patterns that should never appear in output
     FORBIDDEN_OUTPUT_PATTERNS = [
         r"(?:api[_\s]?key|password|secret)[:\s]+\S+",  # Credential leakage
         r"\b(?:ssn|social\s+security)\b.*\d{3}[-\s]?\d{2}[-\s]?\d{4}",  # SSN
     ]
-    
+
     def __init__(
         self,
         max_length: int = 50000,
@@ -185,7 +185,7 @@ class OutputGuardrail:
     ):
         """
         Initialize the output guardrail.
-        
+
         Args:
             max_length: Maximum allowed output length.
             check_credentials: Whether to check for credential leakage.
@@ -194,7 +194,7 @@ class OutputGuardrail:
         self.max_length = max_length
         self.check_credentials = check_credentials
         self.check_uncertainty = check_uncertainty
-        
+
         self._forbidden_patterns = [
             re.compile(p, re.IGNORECASE) for p in self.FORBIDDEN_OUTPUT_PATTERNS
         ]
@@ -202,22 +202,22 @@ class OutputGuardrail:
     def validate(self, text: str, question: Optional[str] = None) -> GuardrailResult:
         """
         Validate output text.
-        
+
         Args:
             text: The output text to validate.
             question: Optional original question for context.
-            
+
         Returns:
             GuardrailResult with validation status and details.
         """
         violations = []
         sanitized = text
-        
+
         # Length check
         if len(text) > self.max_length:
             violations.append(f"Output too long (max: {self.max_length})")
             sanitized = text[:self.max_length] + "... [truncated]"
-        
+
         # Credential leakage check
         if self.check_credentials:
             for pattern in self._forbidden_patterns:
@@ -227,7 +227,7 @@ class OutputGuardrail:
                     # Redact the match
                     sanitized = pattern.sub("[REDACTED]", sanitized)
                     logger.warning("Credential pattern found and redacted in output")
-        
+
         # Uncertainty detection (warning only)
         if self.check_uncertainty:
             text_lower = text.lower()
@@ -235,13 +235,13 @@ class OutputGuardrail:
                 if phrase in text_lower:
                     violations.append(f"Uncertainty detected: '{phrase}'")
                     break
-        
+
         # Determine status
         has_critical = any(
-            "credential" in v.lower() or "pii" in v.lower() 
+            "credential" in v.lower() or "pii" in v.lower()
             for v in violations
         )
-        
+
         if has_critical:
             status = GuardrailStatus.FAIL
             message = "Output blocked due to safety concerns"
@@ -251,7 +251,7 @@ class OutputGuardrail:
         else:
             status = GuardrailStatus.PASS
             message = "Output validated successfully"
-        
+
         return GuardrailResult(
             status=status,
             message=message,
@@ -268,12 +268,12 @@ def apply_guardrails(
 ) -> Tuple[bool, str, List[str]]:
     """
     Convenience function to apply input guardrails.
-    
+
     Args:
         input_text: Text to validate.
         input_guardrail: Optional custom input guardrail.
         output_guardrail: Not used for input validation (for future use).
-        
+
     Returns:
         Tuple of (passed, sanitized_text, violations).
     """

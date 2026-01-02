@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 def setup_tracing(app, service_name=None):
     """
     Setup OpenTelemetry tracing for a FastAPI app.
-    
+
     Args:
         app: The FastAPI application instance.
         service_name: Optional service name override.
@@ -31,16 +31,16 @@ def setup_tracing(app, service_name=None):
     })
 
     provider = TracerProvider(resource=resource)
-    
+
     # Use OTLP exporter (default for Jaeger)
     # Jaeger OTLP gRPC port is 4317 by default
     otlp_endpoint = os.getenv("OTEL_EXPORTER_OTLP_ENDPOINT", "http://jaeger:4317")
-    
+
     try:
         processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=otlp_endpoint, insecure=True))
         provider.add_span_processor(processor)
         trace.set_tracer_provider(provider)
-        
+
         # Instrument FastAPI
         FastAPIInstrumentor.instrument_app(app)
         logger.info(f"Tracing setup complete (endpoint: {otlp_endpoint}).")

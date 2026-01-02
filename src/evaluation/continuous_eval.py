@@ -41,14 +41,14 @@ class QualityTrend:
 class ContinuousEvaluator:
     """
     Continuous evaluation pipeline for production monitoring.
-    
+
     Features:
     - Shadow evaluation on production traffic
     - Quality score tracking over time
     - A/B testing support
     - Threshold-based alerts
     """
-    
+
     def __init__(
         self,
         quality_threshold: float = 0.7,
@@ -57,7 +57,7 @@ class ContinuousEvaluator:
     ):
         """
         Initialize continuous evaluator.
-        
+
         Args:
             quality_threshold: Minimum acceptable quality score.
             window_size: Number of evaluations to keep in history.
@@ -66,15 +66,15 @@ class ContinuousEvaluator:
         self.quality_threshold = quality_threshold
         self.window_size = window_size
         self.enable_shadow_eval = enable_shadow_eval
-        
+
         self._eval_history: deque = deque(maxlen=window_size)
         self._ab_results: Dict[str, List[EvalResult]] = {}
-        
+
         # Lazy load evaluation metrics
         self._metrics = None
-        
+
         logger.info(f"ContinuousEvaluator initialized: threshold={quality_threshold}")
-    
+
     @property
     def metrics(self):
         """Lazy load evaluation metrics."""
@@ -82,7 +82,7 @@ class ContinuousEvaluator:
             from .metrics import EvaluationMetrics
             self._metrics = EvaluationMetrics()
         return self._metrics
-    
+
     def evaluate_response(
         self,
         query: str,
@@ -94,7 +94,7 @@ class ContinuousEvaluator:
     ) -> EvalResult:
         """
         Evaluate a response quality.
-        
+
         Args:
             query: The user query.
             response: The generated response.
@@ -102,19 +102,19 @@ class ContinuousEvaluator:
             expected_keywords: Optional keywords to check.
             reference: Optional reference answer.
             session_id: Session identifier.
-            
+
         Returns:
             EvalResult with quality assessment.
         """
         metrics_dict = {}
         scores = []
-        
+
         # Functional correctness if keywords provided
         if expected_keywords:
             fc_score = self.metrics.functional_correctness(response, expected_keywords)
             metrics_dict["functional_correctness"] = fc_score
             scores.append(fc_score)
-        
+
         # Lexical exactness if reference provided
         if reference:
             lex_score = self.metrics.lexical_exactness(response, reference)
@@ -123,15 +123,15 @@ class ContinuousEvaluator:
             metrics_dict["rouge_l"] = rouge_score
             scores.append(lex_score)
             scores.append(rouge_score)
-        
+
         # Response quality heuristics
         quality_score = self._compute_quality_heuristics(response, context)
         metrics_dict["heuristic_quality"] = quality_score
         scores.append(quality_score)
-        
+
         # Overall quality score
         overall_score = sum(scores) / len(scores) if scores else quality_score
-        
+
         result = EvalResult(
             query=query,
             response=response,
@@ -140,15 +140,15 @@ class ContinuousEvaluator:
             context=context,
             session_id=session_id
         )
-        
+
         self._eval_history.append(result)
-        
+
         # Check threshold
         if overall_score < self.quality_threshold:
             logger.warning(f"Low quality response: {overall_score:.2f} < {self.quality_threshold}")
-        
+
         return result
-    
+
     def _compute_quality_heuristics(
         self,
         response: str,
@@ -156,15 +156,15 @@ class ContinuousEvaluator:
     ) -> float:
         """Compute quality score based on heuristics."""
         score = 1.0
-        
+
         # Check for empty or very short responses
         if not response or len(response.strip()) < 10:
             return 0.1
-        
+
         # Check response length relative to context
         if context and len(response) < len(context) * 0.1:
             score -= 0.2
-        
+
         # Check for uncertainty markers
         uncertainty_phrases = [
             "i'm not sure", "i don't know", "i cannot", "i can't",
@@ -175,7 +175,7 @@ class ContinuousEvaluator:
             if phrase in response_lower:
                 score -= 0.1
                 break
-        
+
         # Check for context utilization
         if context:
             # Simple overlap check
@@ -185,25 +185,25 @@ class ContinuousEvaluator:
             context_utilization = overlap / len(context_words) if context_words else 0
             if context_utilization < 0.05:
                 score -= 0.2  # Response doesn't use context
-        
+
         return max(0.0, min(1.0, score))
-    
+
     def get_quality_trend(
         self,
         window_days: int = 30
     ) -> QualityTrend:
         """
         Get quality trend over a time window.
-        
+
         Args:
             window_days: Days to analyze.
-            
+
         Returns:
             QualityTrend with analysis.
         """
         cutoff = time.time() - (window_days * 86400)
         recent = [e for e in self._eval_history if e.timestamp >= cutoff]
-        
+
         if not recent:
             return QualityTrend(
                 window_days=window_days,
@@ -214,10 +214,10 @@ class ContinuousEvaluator:
                 trend="unknown",
                 change_pct=0.0
             )
-        
+
         scores = [e.quality_score for e in recent]
         avg = sum(scores) / len(scores)
-        
+
         # Calculate trend by comparing first and second half
         mid = len(scores) // 2
         if mid > 0:
@@ -225,7 +225,7 @@ class ContinuousEvaluator:
             second_half_avg = sum(scores[mid:]) / (len(scores) - mid)
             change = second_half_avg - first_half_avg
             change_pct = (change / first_half_avg * 100) if first_half_avg > 0 else 0
-            
+
             if change_pct > 5:
                 trend = "improving"
             elif change_pct < -5:
@@ -235,7 +235,7 @@ class ContinuousEvaluator:
         else:
             change_pct = 0
             trend = "insufficient_data"
-        
+
         return QualityTrend(
             window_days=window_days,
             sample_count=len(recent),
@@ -245,24 +245,24 @@ class ContinuousEvaluator:
             trend=trend,
             change_pct=change_pct
         )
-    
+
     def check_quality_threshold(
         self,
         threshold: Optional[float] = None
     ) -> bool:
         """
         Check if current quality meets threshold.
-        
+
         Args:
             threshold: Quality threshold (uses default if not specified).
-            
+
         Returns:
             True if quality is above threshold.
         """
         threshold = threshold or self.quality_threshold
         trend = self.get_quality_trend(window_days=7)
         return trend.avg_quality >= threshold
-    
+
     def start_ab_test(
         self,
         test_name: str
@@ -270,7 +270,7 @@ class ContinuousEvaluator:
         """Start an A/B test."""
         self._ab_results[test_name] = []
         logger.info(f"Started A/B test: {test_name}")
-    
+
     def record_ab_result(
         self,
         test_name: str,
@@ -282,7 +282,7 @@ class ContinuousEvaluator:
         result.metrics["variant"] = variant
         if test_name in self._ab_results:
             self._ab_results[test_name].append(result)
-    
+
     def get_ab_results(
         self,
         test_name: str
@@ -290,16 +290,16 @@ class ContinuousEvaluator:
         """Get A/B test results."""
         if test_name not in self._ab_results:
             return {"error": "Test not found"}
-        
+
         results = self._ab_results[test_name]
         by_variant: Dict[str, List[float]] = {}
-        
+
         for r in results:
             variant = r.metrics.get("variant", "unknown")
             if variant not in by_variant:
                 by_variant[variant] = []
             by_variant[variant].append(r.quality_score)
-        
+
         analysis = {}
         for variant, scores in by_variant.items():
             analysis[variant] = {
@@ -308,17 +308,17 @@ class ContinuousEvaluator:
                 "min": min(scores) if scores else 0,
                 "max": max(scores) if scores else 0
             }
-        
+
         return {
             "test_name": test_name,
             "total_samples": len(results),
             "variants": analysis
         }
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get evaluator statistics."""
         trend = self.get_quality_trend(7)
-        
+
         return {
             "total_evaluations": len(self._eval_history),
             "quality_threshold": self.quality_threshold,

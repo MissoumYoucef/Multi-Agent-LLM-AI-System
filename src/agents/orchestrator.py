@@ -36,7 +36,7 @@ from ..utils.cache import ResponseCache
 from ..utils.cost_controller import CostController, BudgetPeriod
 from ..utils.token_manager import TokenManager
 from ..utils.config import (
-    CACHE_ENABLED, CACHE_TTL_SECONDS, DAILY_BUDGET_USD, 
+    CACHE_ENABLED, CACHE_TTL_SECONDS, DAILY_BUDGET_USD,
     COST_ALERT_THRESHOLD, MEMORY_BUFFER_SIZE, REDIS_URL
 )
 from ..memory.memory_manager import MemoryManager
@@ -76,10 +76,10 @@ class AgentState(TypedDict):
 class Orchestrator:
     """
     Orchestrator with guardrails, ReAct, self-reflection, and integrated Cache and cost control.
-    
-    Workflow: Input Guardrail → [Cache Check] → [Optional ReAct] → Retrieve → Solve → 
+
+    Workflow: Input Guardrail → [Cache Check] → [Optional ReAct] → Retrieve → Solve →
               Analyze → Self-Reflect → [Evaluate] → Output Guardrail → [Cache Store]
-    
+
     Integrated utilities:
     - ResponseCache: Caches responses to avoid redundant LLM calls
     - CostController: Tracks and controls API costs
@@ -88,7 +88,7 @@ class Orchestrator:
     - ContinuousEvaluator: Monitors response quality
     - RetryHandler/CircuitBreaker: Error resilience
     """
-    
+
     def __init__(
         self,
         retriever: RetrieverProtocol,
@@ -105,7 +105,7 @@ class Orchestrator:
     ):
         """
         Initialize orchestrator.
-        
+
         Args:
             retriever: The hybrid retriever for RAG.
             enable_guardrails: Whether to enable input/output guardrails.
@@ -124,31 +124,31 @@ class Orchestrator:
         self.enable_reflection = enable_reflection
         self.enable_react = enable_react
         self.session_id = session_id
-        
+
         # Initialize agents
         self.chatbot = ChatbotAgent()
         self.solver = SolverAgent()
         self.analyzer = AnalyzerAgent()
-        
+
         # Initialize pattern components
         if enable_guardrails:
             self.input_guardrail = InputGuardrail()
             self.output_guardrail = OutputGuardrail()
-        
+
         if enable_reflection:
             self.reflective_agent = ReflectiveAgent(
                 quality_threshold=reflection_threshold
             )
-        
+
         if enable_react:
             self.react_agent = SimpleReActAgent()
-        
+
         # Initialize integrated utilities
         self.enable_caching = enable_caching and CACHE_ENABLED
         self.enable_cost_control = enable_cost_control
         self.enable_memory = enable_memory
         self.enable_evaluation = enable_evaluation
-        
+
         if self.enable_caching:
             self.cache = ResponseCache(
                 max_size=1000,
@@ -157,7 +157,7 @@ class Orchestrator:
                 redis_url=REDIS_URL
             )
             logger.info("Response caching enabled")
-        
+
         if self.enable_cost_control:
             budget = daily_budget or DAILY_BUDGET_USD
             self.cost_controller = CostController(
@@ -166,7 +166,7 @@ class Orchestrator:
                 enable_hard_limit=False  # Soft limit by default
             )
             logger.info(f"Cost control enabled: ${budget}/day budget")
-        
+
         if self.enable_memory:
             self.memory_manager = MemoryManager(
                 buffer_size=MEMORY_BUFFER_SIZE,
@@ -174,17 +174,17 @@ class Orchestrator:
                 enable_persistence=True
             )
             logger.info("Conversation memory enabled")
-        
+
         if self.enable_evaluation:
             self.evaluator = ContinuousEvaluator(
                 quality_threshold=reflection_threshold,
                 enable_shadow_eval=True
             )
             logger.info("Continuous evaluation enabled")
-        
+
         # Token manager for context truncation
         self.token_manager = TokenManager()
-        
+
         # Error handling with retry and circuit breaker
         self.retry_handler = RetryHandler(
             config=RetryConfig(max_retries=3, initial_delay=1.0)
@@ -193,7 +193,7 @@ class Orchestrator:
             failure_threshold=5,
             reset_timeout=60.0
         )
-        
+
         self.workflow = self._create_workflow()
         logger.info(f"Orchestrator initialized: guardrails={enable_guardrails}, "
                    f"reflection={enable_reflection}, react={enable_react}, "
@@ -215,7 +215,7 @@ class Orchestrator:
 
         # Set entry point
         workflow.set_entry_point("input_guard")
-        
+
         # Add conditional edge from input guard
         workflow.add_conditional_edges(
             "input_guard",
@@ -225,7 +225,7 @@ class Orchestrator:
                 "continue": "retrieve"
             }
         )
-        
+
         # Main flow
         workflow.add_edge("retrieve", "reason" if self.enable_react else "solve")
         if self.enable_react:
@@ -249,7 +249,7 @@ class Orchestrator:
         query = state["messages"][-1].content
         session_id = state.get("session_id", self.session_id)
         print("--- Input Guardrail Check ---")
-        
+
         # Check cache first
         if self.enable_caching:
             cached_response = self.cache.get(query)
@@ -263,7 +263,7 @@ class Orchestrator:
                     "analysis": "Retrieved from cache",
                     "cache_hit": True
                 }
-        
+
         # Check cost budget
         if self.enable_cost_control:
             can_proceed, message = self.cost_controller.check_budget()
@@ -276,11 +276,11 @@ class Orchestrator:
                     "solution": f"Request blocked: {message}",
                     "analysis": "Budget limit reached."
                 }
-        
+
         # Add to memory
         if self.enable_memory:
             self.memory_manager.add_user_message(query, session_id)
-        
+
         if not self.enable_guardrails:
             return {
                 "guardrail_status": "skip",
@@ -288,9 +288,9 @@ class Orchestrator:
                 "problem": query,
                 "cache_hit": False
             }
-        
+
         result = self.input_guardrail.validate(query)
-        
+
         if result.failed:
             logger.warning(f"Input blocked: {result.violations}")
             return {
@@ -301,7 +301,7 @@ class Orchestrator:
                 "analysis": "Input validation failed.",
                 "cache_hit": False
             }
-        
+
         return {
             "guardrail_status": result.status.value,
             "guardrail_violations": result.violations,
@@ -314,30 +314,30 @@ class Orchestrator:
         # Skip if cache hit
         if state.get("cache_hit"):
             return {}
-            
+
         query = state["problem"]
         print(f"--- Retrieving context for: {query} ---")
-        
+
         # Use circuit breaker for retrieval
         try:
             docs = self.circuit_breaker.call(self.retriever.retrieve, query)
         except Exception as e:
             logger.error(f"Retrieval failed: {e}")
             docs = []
-        
+
         context = "\n\n".join([doc.page_content for doc in docs])
-        
+
         # Truncate context if too long
         token_count = self.token_manager.count_tokens(context)
         max_context_tokens = 4000  # Leave room for prompt and response
         if token_count > max_context_tokens:
             context = self.token_manager.truncate_to_limit(
-                context, 
+                context,
                 max_context_tokens,
                 preserve_sentences=True
             )
             logger.info(f"Context truncated from {token_count} to {max_context_tokens} tokens")
-        
+
         return {"context": context, "token_count": token_count}
 
     def reason_node(self, state: AgentState):
@@ -345,20 +345,20 @@ class Orchestrator:
         # Skip if cache hit
         if state.get("cache_hit"):
             return {}
-            
+
         print("--- ReAct Reasoning ---")
-        
+
         if not self.enable_react:
             return {"reasoning_trace": "ReAct disabled"}
-        
+
         problem = state["problem"]
         context = state["context"]
-        
+
         # Use retry handler for reasoning
         result = self.retry_handler.execute(
             self.react_agent.invoke, problem, context
         )
-        
+
         if result.success:
             return {"reasoning_trace": result.result}
         else:
@@ -370,33 +370,33 @@ class Orchestrator:
         # Skip if cache hit
         if state.get("cache_hit"):
             return {}
-            
+
         print("--- Solving ---")
         problem = state["problem"]
         context = state["context"]
-        
+
         # Include reasoning trace if available
         if self.enable_react and state.get("reasoning_trace"):
             context = f"{context}\n\nReasoning: {state['reasoning_trace']}"
-        
+
         # Include conversation history if memory enabled
         if self.enable_memory:
             session_id = state.get("session_id", self.session_id)
             memory_context = self.memory_manager.get_context(session_id)
             if memory_context:
                 context = f"Conversation History:\n{memory_context}\n\n{context}"
-        
+
         # Use retry handler for solving
         result = self.retry_handler.execute(
             self.solver.invoke, problem, context
         )
-        
+
         if result.success:
             solution = result.result
         else:
             logger.error(f"Solver failed after {result.attempts} attempts")
             solution = "I apologize, but I encountered an error while processing your request."
-        
+
         # Estimate and record cost
         if self.enable_cost_control:
             input_tokens = self.token_manager.count_tokens(f"{problem}\n{context}")
@@ -408,7 +408,7 @@ class Orchestrator:
                 output_tokens=output_tokens,
                 cost=cost
             )
-        
+
         return {"solution": solution, "messages": [AIMessage(content=solution)]}
 
     def analyze_node(self, state: AgentState):
@@ -416,7 +416,7 @@ class Orchestrator:
         # Skip if cache hit
         if state.get("cache_hit"):
             return {}
-            
+
         print("--- Analyzing ---")
         problem = state["problem"]
         solution = state["solution"]
@@ -429,29 +429,29 @@ class Orchestrator:
         # Skip if cache hit
         if state.get("cache_hit"):
             return {}
-            
+
         print("--- Self-Reflection ---")
-        
+
         if not self.enable_reflection:
             return {
                 "reflection_score": 1.0,
                 "reflection_history": []
             }
-        
+
         problem = state["problem"]
         solution = state["solution"]
         context = state["context"]
-        
+
         result = self.reflective_agent.reflect_and_improve(
             question=problem,
             response=solution,
             context=context
         )
-        
+
         # Update solution if improved
         if result["improvements_made"] > 0:
             print(f"--- Solution improved ({result['improvements_made']} iterations) ---")
-        
+
         return {
             "solution": result["final_response"],
             "reflection_score": result["final_score"],
@@ -462,11 +462,11 @@ class Orchestrator:
         """Apply output guardrails and post-processing."""
         print("--- Output Guardrail Check ---")
         session_id = state.get("session_id", self.session_id)
-        
+
         # Skip guardrails if cache hit (already validated)
         if state.get("cache_hit"):
             return {}
-        
+
         # Evaluate response quality
         if self.enable_evaluation:
             eval_result = self.evaluator.evaluate_response(
@@ -478,7 +478,7 @@ class Orchestrator:
             quality_score = eval_result.quality_score
         else:
             quality_score = state.get("reflection_score", 1.0)
-        
+
         # Store in cache
         if self.enable_caching and not state.get("cache_hit"):
             self.cache.set(
@@ -486,19 +486,19 @@ class Orchestrator:
                 response=state["solution"],
                 metadata={"quality_score": quality_score}
             )
-        
+
         # Store response in memory
         if self.enable_memory:
             self.memory_manager.add_assistant_message(state["solution"], session_id)
-        
+
         if not self.enable_guardrails:
             return {"quality_score": quality_score}
-        
+
         result = self.output_guardrail.validate(
             state["solution"],
             question=state["problem"]
         )
-        
+
         if result.failed:
             logger.warning(f"Output sanitized: {result.violations}")
             return {
@@ -506,17 +506,17 @@ class Orchestrator:
                 "guardrail_violations": state.get("guardrail_violations", []) + result.violations,
                 "quality_score": quality_score
             }
-        
+
         return {"quality_score": quality_score}
 
     def run(self, query: str, session_id: str = None) -> dict:
         """
         Run the enhanced workflow.
-        
+
         Args:
             query: The user query.
             session_id: Optional session ID for memory (uses default if None).
-            
+
         Returns:
             Dictionary with solution, analysis, and metadata.
         """
@@ -532,27 +532,27 @@ class Orchestrator:
             "quality_score": 0.0
         }
         return self.workflow.invoke(inputs)
-    
+
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics from all integrated utilities."""
         stats = {}
-        
+
         if self.enable_caching:
             stats["cache"] = self.cache.get_stats()
-        
+
         if self.enable_cost_control:
             stats["cost"] = {
                 "daily_usage": self.cost_controller.get_usage(BudgetPeriod.DAILY),
                 "budget_status": self.cost_controller.get_budget_status(BudgetPeriod.DAILY)
             }
-        
+
         if self.enable_memory:
             stats["memory"] = {
                 "sessions": self.memory_manager.list_sessions(),
                 "session_stats": self.memory_manager.get_session_stats(self.session_id)
             }
-        
+
         if self.enable_evaluation:
             stats["evaluation"] = self.evaluator.get_stats()
-        
+
         return stats

@@ -16,14 +16,14 @@ logger = logging.getLogger(__name__)
 class AnalyzerAgent:
     """
     An analytical agent that reviews solutions for accuracy and completeness.
-    
+
     Verifies solutions against the original context.
     """
-    
+
     def __init__(self, model: str = None):
         """
         Initialize the analyzer agent.
-        
+
         Args:
             model: Optional model name override. Defaults to LLM_MODEL from config.
         """
@@ -40,13 +40,13 @@ class AnalyzerAgent:
                 google_api_key=GOOGLE_API_KEY
             )
         self.prompt = PromptTemplate(
-            template="""You are an analytical assistant. 
+            template="""You are an analytical assistant.
             Analyze the provided solution and context to ensure accuracy and completeness.
-            
+
             Problem: {problem}
             Solution: {solution}
             Context: {context}
-            
+
             Analysis:""",
             input_variables=["problem", "solution", "context"]
         )
@@ -56,22 +56,22 @@ class AnalyzerAgent:
     def invoke(self, problem: str, solution: str, context: str) -> str:
         """
         Analyze a solution for accuracy and completeness.
-        
+
         Args:
             problem: The original problem.
             solution: The proposed solution.
             context: The context used to generate the solution.
-            
+
         Returns:
             An analysis of the solution.
-            
+
         Raises:
             Exception: If the LLM call fails.
         """
         if not solution or not solution.strip():
             logger.warning("Empty solution received for analysis")
             return "No solution provided to analyze."
-        
+
         try:
             response = self.chain.invoke({
                 "problem": problem or "",
